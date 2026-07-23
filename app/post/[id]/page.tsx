@@ -67,7 +67,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
   // Check visibility (must be approved, or owned by user, or admin)
   if (
     postRaw.status !== 'approved' &&
-    currentUserId !== postRaw.author?.id &&
+    currentUserId !== post.author?.id &&
     currentUserRole !== 'admin'
   ) {
     notFound();
