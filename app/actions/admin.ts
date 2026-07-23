@@ -83,11 +83,9 @@ export async function handleReportAction({
     const supabase = await createClient();
 
     if (action === 'delete_post' && postId) {
-      // Delete post (this will also delete related reports if configured, or delete report)
       await supabase.from('posts').delete().eq('id', postId);
       await supabase.from('reports').delete().eq('id', reportId);
     } else {
-      // Dismiss report
       await supabase.from('reports').delete().eq('id', reportId);
     }
 
@@ -107,10 +105,12 @@ export async function createSubjectAction({
   code,
   name,
   faculty,
+  department = 'Bộ môn chung',
 }: {
   code: string;
   name: string;
   faculty: string;
+  department?: string;
 }) {
   try {
     const { isAdmin } = await checkAdminOrMod();
@@ -123,6 +123,7 @@ export async function createSubjectAction({
       code: code.trim().toUpperCase(),
       name: name.trim(),
       faculty: faculty.trim(),
+      department: department.trim(),
     });
 
     if (error) throw error;
@@ -144,11 +145,13 @@ export async function updateSubjectAction({
   code,
   name,
   faculty,
+  department = 'Bộ môn chung',
 }: {
   id: string;
   code: string;
   name: string;
   faculty: string;
+  department?: string;
 }) {
   try {
     const { isAdmin } = await checkAdminOrMod();
@@ -163,6 +166,7 @@ export async function updateSubjectAction({
         code: code.trim().toUpperCase(),
         name: name.trim(),
         faculty: faculty.trim(),
+        department: department.trim(),
       })
       .eq('id', id);
 
@@ -218,7 +222,6 @@ export async function updateUserRoleAction({
       return { success: false, error: 'Chỉ Admin mới có quyền phân quyền người dùng.' };
     }
 
-    // Security Rule: Admin cannot change their own role!
     if (targetUserId === user.id) {
       return {
         success: false,

@@ -3,14 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPostAction } from '@/app/actions/post';
-import { FACULTIES } from '@/lib/constants';
+import { FACULTIES_DATA } from '@/lib/constants';
 import {
   Upload,
   Link as LinkIcon,
   FileText,
   AlertCircle,
   CheckCircle2,
-  PlusCircle,
   BookPlus,
   Info,
   ArrowLeft,
@@ -47,7 +46,9 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
   const [newSubjectCode, setNewSubjectCode] = useState('');
   const [newSubjectName, setNewSubjectName] = useState('');
   const [selectedFacultyIndex, setSelectedFacultyIndex] = useState<number>(0);
-  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>(
+    FACULTIES_DATA[0]?.departments[0] || ''
+  );
 
   // File / Link Attachment State
   const [attachMode, setAttachMode] = useState<'file' | 'link'>('file');
@@ -60,7 +61,7 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const currentFaculty = FACULTIES[selectedFacultyIndex] || FACULTIES[0];
+  const currentFaculty = FACULTIES_DATA[selectedFacultyIndex] || FACULTIES_DATA[0];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -293,11 +294,11 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                         onChange={(e) => {
                           const idx = parseInt(e.target.value, 10);
                           setSelectedFacultyIndex(idx);
-                          setSelectedDepartment(FACULTIES[idx]?.departments[0] || '');
+                          setSelectedDepartment(FACULTIES_DATA[idx]?.departments[0] || '');
                         }}
                         className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none"
                       >
-                        {FACULTIES.map((fac, idx) => (
+                        {FACULTIES_DATA.map((fac, idx) => (
                           <option key={fac.name} value={idx}>
                             {fac.name}
                           </option>

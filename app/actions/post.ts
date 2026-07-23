@@ -42,8 +42,8 @@ export async function createPostAction(formData: FormData) {
     if (isNewSubject) {
       const rawCode = (formData.get('newSubjectCode') as string) || '';
       const rawName = (formData.get('newSubjectName') as string) || '';
-      const faculty = (formData.get('newSubjectFaculty') as string) || '';
-      const department = (formData.get('newSubjectDepartment') as string) || '';
+      const faculty = (formData.get('newSubjectFaculty') as string) || 'Công nghệ Thông tin';
+      const department = (formData.get('newSubjectDepartment') as string) || 'Kỹ thuật Phần mềm';
 
       if (!rawCode.trim()) {
         return { success: false, error: 'Vui lòng nhập Mã môn học mới.' };
@@ -55,7 +55,6 @@ export async function createPostAction(formData: FormData) {
       // Step 1: Normalize Subject Code (Strip spaces & Convert to UPPERCASE)
       const normalizedCode = rawCode.trim().replace(/\s+/g, '').toUpperCase();
       const trimmedName = rawName.trim();
-      const fullFacultyInfo = department ? `${faculty} - ${department}` : faculty;
 
       // Step 2: Query database case-insensitively using ilike
       const { data: existingSubject } = await supabase
@@ -68,13 +67,14 @@ export async function createPostAction(formData: FormData) {
         // Step 3: Subject already exists -> Reuse existing subject ID
         finalSubjectId = existingSubject.id;
       } else {
-        // Step 4: Subject does NOT exist -> Create new record in DB
+        // Step 4: Subject does NOT exist -> Create new record in DB with faculty AND department
         const { data: newSubject, error: subError } = await supabase
           .from('subjects')
           .insert({
             code: normalizedCode,
             name: trimmedName,
-            faculty: fullFacultyInfo || 'Khoa CNTT',
+            faculty: faculty,
+            department: department,
           })
           .select('id')
           .single();
