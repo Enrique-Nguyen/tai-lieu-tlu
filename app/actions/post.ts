@@ -4,6 +4,7 @@ import { createClient } from '@/lib/server';
 import { revalidatePath } from 'next/cache';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
+const VALID_CATEGORIES = ['dethi', 'slide', 'doan', 'giaotrinh'];
 
 export async function createPostAction(formData: FormData) {
   try {
@@ -22,7 +23,7 @@ export async function createPostAction(formData: FormData) {
 
     const title = (formData.get('title') as string)?.trim();
     const description = (formData.get('description') as string)?.trim();
-    const category = formData.get('category') as string;
+    const categoryRaw = formData.get('category') as string;
     const isNewSubject = formData.get('isNewSubject') === 'true';
 
     const attachMode = formData.get('attachMode') as 'file' | 'link';
@@ -32,9 +33,12 @@ export async function createPostAction(formData: FormData) {
       return { success: false, error: 'Vui lòng nhập tiêu đề tài liệu.' };
     }
 
-    if (!category) {
+    if (!categoryRaw) {
       return { success: false, error: 'Vui lòng chọn Danh mục tài liệu.' };
     }
+
+    // Ensure category satisfies posts_category_check constraint
+    const category = VALID_CATEGORIES.includes(categoryRaw) ? categoryRaw : 'giaotrinh';
 
     let finalSubjectId: string | null = null;
 

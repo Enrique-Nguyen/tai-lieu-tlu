@@ -32,7 +32,6 @@ const categories = [
   { value: 'slide', label: '📊 Slide Bài giảng' },
   { value: 'doan', label: '💻 Bài tập lớn / Đồ án' },
   { value: 'giaotrinh', label: '📚 Giáo trình & Sách' },
-  { value: 'khac', label: '📁 Khác' },
 ];
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
