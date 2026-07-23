@@ -3,16 +3,15 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPostAction } from '@/app/actions/post';
+import { FACULTIES } from '@/lib/constants';
 import {
   Upload,
   Link as LinkIcon,
   FileText,
   AlertCircle,
   CheckCircle2,
-  FileCheck,
-  Presentation,
-  FolderGit2,
-  BookMarked,
+  PlusCircle,
+  BookPlus,
   Info,
   ArrowLeft,
   GraduationCap,
@@ -42,13 +41,26 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 export function PostCreateForm({ subjects }: PostCreateFormProps) {
   const router = useRouter();
 
+  // Subject Toggle State
+  const [isNewSubject, setIsNewSubject] = useState(false);
+  const [selectedSubjectId, setSelectedSubjectId] = useState('');
+  const [newSubjectCode, setNewSubjectCode] = useState('');
+  const [newSubjectName, setNewSubjectName] = useState('');
+  const [selectedFacultyIndex, setSelectedFacultyIndex] = useState<number>(0);
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('');
+
+  // File / Link Attachment State
   const [attachMode, setAttachMode] = useState<'file' | 'link'>('file');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [externalLink, setExternalLink] = useState('');
+
+  // Form State
   const [fileError, setFileError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const currentFaculty = FACULTIES[selectedFacultyIndex] || FACULTIES[0];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -58,7 +70,7 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
     if (file) {
       if (file.size > MAX_FILE_SIZE) {
         setFileError(
-          'File quá lớn! Vui lòng upload tài liệu >5MB lên Google Drive/Fshare và chọn phương thức Chèn Link.'
+          'File vượt quá 5MB. Vui lòng upload lên Google Drive/Fshare và sử dụng phương thức dán Link.'
         );
         setSelectedFile(null);
         return;
@@ -77,7 +89,17 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
     const formEl = e.currentTarget;
     const formData = new FormData(formEl);
 
+    formData.set('isNewSubject', isNewSubject ? 'true' : 'false');
     formData.set('attachMode', attachMode);
+
+    if (isNewSubject) {
+      formData.set('newSubjectCode', newSubjectCode.trim());
+      formData.set('newSubjectName', newSubjectName.trim());
+      formData.set('newSubjectFaculty', currentFaculty.name);
+      formData.set('newSubjectDepartment', selectedDepartment || currentFaculty.departments[0] || '');
+    } else {
+      formData.set('subjectId', selectedSubjectId);
+    }
 
     if (attachMode === 'file') {
       if (!selectedFile) {
@@ -86,7 +108,7 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
       }
       if (selectedFile.size > MAX_FILE_SIZE) {
         setFileError(
-          'File quá lớn! Vui lòng upload tài liệu >5MB lên Google Drive/Fshare và chọn phương thức Chèn Link.'
+          'File vượt quá 5MB. Vui lòng upload lên Google Drive/Fshare và sử dụng phương thức dán Link.'
         );
         return;
       }
@@ -104,9 +126,9 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
       const res = await createPostAction(formData);
 
       if (res.success) {
-        setSuccessMessage(res.message || 'Tài liệu của bạn đã được gửi và đang chờ duyệt!');
+        setSuccessMessage(res.message || 'Tài liệu đã được gửi thành công và đang chờ Admin duyệt!');
         setTimeout(() => {
-          router.push('/my-posts');
+          router.push('/');
           router.refresh();
         }, 2000);
       } else {
@@ -122,7 +144,7 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-300">
       
-      {/* Header Bar */}
+      {/* Top Header */}
       <div className="flex items-center justify-between">
         <Link
           href="/"
@@ -152,22 +174,22 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
           </div>
         </div>
 
-        {/* Success Modal Notification */}
+        {/* Success Modal Toast */}
         {successMessage ? (
           <div className="py-12 text-center space-y-4">
             <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto animate-bounce" />
             <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-              Gửi tài liệu thành công!
+              Tài liệu đã được gửi thành công!
             </h3>
             <p className="text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto">
-              {successMessage} Bài viết sẽ hiển thị công khai ngay sau khi Quản trị viên duyệt.
+              {successMessage} Đang tự động chuyển hướng về Trang chủ...
             </p>
             <div className="pt-4">
               <Link
-                href="/my-posts"
+                href="/"
                 className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-colors"
               >
-                Xem tài liệu của tôi
+                Về Trang chủ ngay
               </Link>
             </div>
           </div>
@@ -181,47 +203,148 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
               </div>
             )}
 
-            {/* Subject Select & Category Select */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            {/* 1. Dynamic Subject Selection & Toggle */}
+            <div className="space-y-3 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
               
-              {/* Select Subject */}
-              <div className="space-y-2">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  Môn học <span className="text-red-500">*</span>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                  <GraduationCap className="w-4 h-4 text-blue-600" />
+                  <span>Chọn Môn học</span> <span className="text-red-500">*</span>
                 </label>
+
+                {/* Checkbox Toggle: Môn học của tôi chưa có trong danh sách */}
+                <label className="inline-flex items-center space-x-2 text-xs font-bold text-blue-600 dark:text-blue-400 cursor-pointer hover:underline">
+                  <input
+                    type="checkbox"
+                    checked={isNewSubject}
+                    onChange={(e) => {
+                      setIsNewSubject(e.target.checked);
+                      setServerError(null);
+                    }}
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4"
+                  />
+                  <span>Môn học của tôi chưa có trong danh sách</span>
+                </label>
+              </div>
+
+              {!isNewSubject ? (
+                /* Default Mode: Existing Subject Select */
                 <select
-                  name="subjectId"
-                  required
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors"
+                  value={selectedSubjectId}
+                  onChange={(e) => setSelectedSubjectId(e.target.value)}
+                  required={!isNewSubject}
+                  className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors"
                 >
-                  <option value="">-- Chọn Môn học --</option>
+                  <option value="">-- Chọn Môn học từ danh sách --</option>
                   {subjects.map((sub) => (
                     <option key={sub.id} value={sub.id}>
                       [{sub.code}] {sub.name}
                     </option>
                   ))}
                 </select>
-              </div>
+              ) : (
+                /* Toggle Mode: Create New Subject Form */
+                <div className="space-y-4 pt-2 animate-in fade-in duration-200 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-blue-200 dark:border-blue-900/60">
+                  <div className="flex items-center space-x-2 text-xs font-bold text-blue-700 dark:text-blue-300">
+                    <BookPlus className="w-4 h-4 text-blue-500" />
+                    <span>Tạo môn học mới (Tự động chuẩn hóa mã môn & kiểm tra trùng lặp)</span>
+                  </div>
 
-              {/* Select Category */}
-              <div className="space-y-2">
-                <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                  Danh mục tài liệu <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="category"
-                  required
-                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors"
-                >
-                  <option value="">-- Chọn Danh mục --</option>
-                  {categories.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* New Subject Code */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-extrabold uppercase text-slate-500">
+                        Mã môn học (Ví dụ: INT1234) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required={isNewSubject}
+                        placeholder="INT1234"
+                        value={newSubjectCode}
+                        onChange={(e) => setNewSubjectCode(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none font-mono uppercase"
+                      />
+                    </div>
 
+                    {/* New Subject Name */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-extrabold uppercase text-slate-500">
+                        Tên môn học <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required={isNewSubject}
+                        placeholder="Ví dụ: Cơ sở Dữ liệu"
+                        value={newSubjectName}
+                        onChange={(e) => setNewSubjectName(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Select Faculty */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-extrabold uppercase text-slate-500">
+                        Thuộc Khoa / Ngành
+                      </label>
+                      <select
+                        value={selectedFacultyIndex}
+                        onChange={(e) => {
+                          const idx = parseInt(e.target.value, 10);
+                          setSelectedFacultyIndex(idx);
+                          setSelectedDepartment(FACULTIES[idx]?.departments[0] || '');
+                        }}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none"
+                      >
+                        {FACULTIES.map((fac, idx) => (
+                          <option key={fac.name} value={idx}>
+                            {fac.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Select Department */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-extrabold uppercase text-slate-500">
+                        Bộ môn chuyên ngành
+                      </label>
+                      <select
+                        value={selectedDepartment}
+                        onChange={(e) => setSelectedDepartment(e.target.value)}
+                        className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none"
+                      >
+                        {currentFaculty.departments.map((dept) => (
+                          <option key={dept} value={dept}>
+                            {dept}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Select Category */}
+            <div className="space-y-2">
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Danh mục tài liệu <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="category"
+                required
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors"
+              >
+                <option value="">-- Chọn Danh mục --</option>
+                {categories.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Title Input */}
@@ -245,20 +368,20 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
               </label>
               <textarea
                 name="description"
-                rows={4}
+                rows={3}
                 placeholder="Nhập thông tin mô tả chi tiết tài liệu, giảng viên phụ trách, học kỳ áp dụng..."
                 className="w-full p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors"
               />
             </div>
 
-            {/* Attachment Options (2 Tabs) */}
+            {/* Attachment Options (2 Tabs / Modes) */}
             <div className="space-y-3 pt-2">
               <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
                 Phương thức đính kèm tài liệu <span className="text-red-500">*</span>
               </label>
 
               {/* Mode Toggle Buttons */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -272,7 +395,7 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                   }`}
                 >
                   <Upload className="w-4 h-4" />
-                  <span>Option A: Upload File trực tiếp (≤ 5MB)</span>
+                  <span>Phương thức A: Upload File trực tiếp (≤ 5MB)</span>
                 </button>
 
                 <button
@@ -288,7 +411,7 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                   }`}
                 >
                   <LinkIcon className="w-4 h-4" />
-                  <span>Option B: Chèn Link ngoài (&gt; 5MB / Drive)</span>
+                  <span>Phương thức B: Chèn Link ngoài (Google Drive / Fshare)</span>
                 </button>
               </div>
 
@@ -375,7 +498,7 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                 {loading && (
                   <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 )}
-                <span>{loading ? 'Đang tải lên & Gửi bài...' : 'Gửi duyệt tài liệu'}</span>
+                <span>{loading ? 'Đang gửi tài liệu...' : 'Gửi duyệt tài liệu'}</span>
               </button>
             </div>
 

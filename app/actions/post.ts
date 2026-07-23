@@ -22,8 +22,9 @@ export async function createPostAction(formData: FormData) {
 
     const title = (formData.get('title') as string)?.trim();
     const description = (formData.get('description') as string)?.trim();
-    const subjectId = formData.get('subjectId') as string;
     const category = formData.get('category') as string;
+    const isNewSubject = formData.get('isNewSubject') === 'true';
+
     const attachMode = formData.get('attachMode') as 'file' | 'link';
     const externalLink = (formData.get('externalLink') as string)?.trim();
 
@@ -31,14 +32,71 @@ export async function createPostAction(formData: FormData) {
       return { success: false, error: 'Vui lòng nhập tiêu đề tài liệu.' };
     }
 
-    if (!subjectId) {
-      return { success: false, error: 'Vui lòng chọn Môn học.' };
-    }
-
     if (!category) {
       return { success: false, error: 'Vui lòng chọn Danh mục tài liệu.' };
     }
 
+    let finalSubjectId: string | null = null;
+
+    // --- Subject Resolution Logic ---
+    if (isNewSubject) {
+      const rawCode = (formData.get('newSubjectCode') as string) || '';
+      const rawName = (formData.get('newSubjectName') as string) || '';
+      const faculty = (formData.get('newSubjectFaculty') as string) || '';
+      const department = (formData.get('newSubjectDepartment') as string) || '';
+
+      if (!rawCode.trim()) {
+        return { success: false, error: 'Vui lòng nhập Mã môn học mới.' };
+      }
+      if (!rawName.trim()) {
+        return { success: false, error: 'Vui lòng nhập Tên môn học mới.' };
+      }
+
+      // Step 1: Normalize Subject Code (Strip spaces & Convert to UPPERCASE)
+      const normalizedCode = rawCode.trim().replace(/\s+/g, '').toUpperCase();
+      const trimmedName = rawName.trim();
+      const fullFacultyInfo = department ? `${faculty} - ${department}` : faculty;
+
+      // Step 2: Query database case-insensitively using ilike
+      const { data: existingSubject } = await supabase
+        .from('subjects')
+        .select('id')
+        .ilike('code', normalizedCode)
+        .maybeSingle();
+
+      if (existingSubject) {
+        // Step 3: Subject already exists -> Reuse existing subject ID
+        finalSubjectId = existingSubject.id;
+      } else {
+        // Step 4: Subject does NOT exist -> Create new record in DB
+        const { data: newSubject, error: subError } = await supabase
+          .from('subjects')
+          .insert({
+            code: normalizedCode,
+            name: trimmedName,
+            faculty: fullFacultyInfo || 'Khoa CNTT',
+          })
+          .select('id')
+          .single();
+
+        if (subError) {
+          console.error('Lỗi khi tạo môn học mới:', subError);
+          return {
+            success: false,
+            error: `Tạo môn học mới thất bại: ${subError.message}`,
+          };
+        }
+
+        finalSubjectId = newSubject.id;
+      }
+    } else {
+      finalSubjectId = formData.get('subjectId') as string;
+      if (!finalSubjectId) {
+        return { success: false, error: 'Vui lòng chọn Môn học từ danh sách.' };
+      }
+    }
+
+    // --- Attachment Handling ---
     let finalFileUrl: string | null = null;
     let finalFileType: string = 'external_link';
 
@@ -49,15 +107,16 @@ export async function createPostAction(formData: FormData) {
         return { success: false, error: 'Vui lòng chọn tệp tin cần tải lên.' };
       }
 
+      // Validate File Size (Max 5MB)
       if (file.size > MAX_FILE_SIZE) {
         return {
           success: false,
           error:
-            'File quá lớn! Vui lòng upload tài liệu >5MB lên Google Drive/Fshare và chọn phương thức Chèn Link.',
+            'File vượt quá 5MB. Vui lòng upload lên Google Drive/Fshare và sử dụng phương thức dán Link.',
         };
       }
 
-      // Determine file extension and type
+      // Determine File Type
       const fileName = file.name;
       const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
 
@@ -88,18 +147,18 @@ export async function createPostAction(formData: FormData) {
         console.error('Storage upload error:', uploadError);
         return {
           success: false,
-          error: `Tải tệp tin thất bại: ${uploadError.message}. Vui lòng thử lại hoặc sử dụng phương thức Chèn Link.`,
+          error: `Tải tệp tin thất bại: ${uploadError.message}. Vui lòng chuyển sang phương thức dán Link.`,
         };
       }
 
-      // Get public URL
+      // Get Public URL
       const {
         data: { publicUrl },
       } = supabase.storage.from('documents').getPublicUrl(uploadData.path);
 
       finalFileUrl = publicUrl;
     } else {
-      // Attach Mode: Link
+      // Option B: External Link
       if (!externalLink) {
         return { success: false, error: 'Vui lòng nhập đường dẫn (URL) tài liệu.' };
       }
@@ -107,18 +166,22 @@ export async function createPostAction(formData: FormData) {
       try {
         new URL(externalLink);
       } catch {
-        return { success: false, error: 'Đường dẫn (URL) không hợp lệ. Vui lòng nhập URL bắt đầu bằng http:// hoặc https://' };
+        return {
+          success: false,
+          error:
+            'Đường dẫn (URL) không hợp lệ. Vui lòng nhập URL hợp lệ bắt đầu bằng http:// hoặc https://',
+        };
       }
 
       finalFileUrl = externalLink;
       finalFileType = 'external_link';
     }
 
-    // Insert record into posts table with status 'pending'
+    // --- Insert Record into `posts` Table ---
     const { error: insertError } = await supabase.from('posts').insert({
       title,
       description: description || null,
-      subject_id: subjectId,
+      subject_id: finalSubjectId,
       author_id: user.id,
       category,
       file_url: finalFileUrl,
@@ -136,10 +199,10 @@ export async function createPostAction(formData: FormData) {
 
     return {
       success: true,
-      message: 'Tài liệu của bạn đã được gửi và đang chờ duyệt!',
+      message: 'Tài liệu đã được gửi thành công và đang chờ Admin duyệt!',
     };
   } catch (err: any) {
-    console.error('Lỗi tạo bài viết:', err);
+    console.error('Lỗi khi tạo bài viết:', err);
     return {
       success: false,
       error: err.message || 'Đã xảy ra lỗi khi tạo bài viết.',
