@@ -1,18 +1,27 @@
-'use client';
+"use client";
 
-import { useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { createClient } from '@/lib/client';
-import { BookOpen, ShieldCheck, FileText, GraduationCap, AlertCircle, Sparkles } from 'lucide-react';
+import { useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/client";
+import {
+  BookOpen,
+  ShieldCheck,
+  FileText,
+  GraduationCap,
+  AlertCircle,
+  Sparkles,
+} from "lucide-react";
 
 function LoginForm() {
-  const [loadingProvider, setLoadingProvider] = useState<'azure' | 'google' | null>(null);
+  const [loadingProvider, setLoadingProvider] = useState<
+    "azure" | "google" | null
+  >(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const searchParams = useSearchParams();
-  const next = searchParams.get('next') || '/';
-  const errorParam = searchParams.get('error');
+  const next = searchParams.get("next") || "/";
+  const errorParam = searchParams.get("error");
 
-  const handleOAuthLogin = async (provider: 'azure' | 'google') => {
+  const handleOAuthLogin = async (provider: "azure" | "google") => {
     try {
       setLoadingProvider(provider);
       setErrorMessage(null);
@@ -25,7 +34,7 @@ function LoginForm() {
         options: {
           redirectTo,
           queryParams: {
-            prompt: 'select_account',
+            prompt: "select_account",
           },
         },
       });
@@ -35,7 +44,7 @@ function LoginForm() {
         setLoadingProvider(null);
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'Đã xảy ra lỗi khi đăng nhập.');
+      setErrorMessage(err.message || "Đã xảy ra lỗi khi đăng nhập.");
       setLoadingProvider(null);
     }
   };
@@ -54,7 +63,10 @@ function LoginForm() {
       {(errorMessage || errorParam) && (
         <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm flex items-start space-x-3">
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <span>{errorMessage || 'Đã xảy ra lỗi xác thực. Vui lòng kiểm tra lại cấu hình Provider trên Supabase.'}</span>
+          <span>
+            {errorMessage ||
+              "Đã xảy ra lỗi xác thực. Vui lòng kiểm tra lại cấu hình Provider trên Supabase."}
+          </span>
         </div>
       )}
 
@@ -62,11 +74,11 @@ function LoginForm() {
         {/* Microsoft Azure Login Button (Primary for TLU Students) */}
         <div className="relative">
           <button
-            onClick={() => handleOAuthLogin('azure')}
+            onClick={() => handleOAuthLogin("azure")}
             disabled={loadingProvider !== null}
             className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold text-sm shadow-md transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group hover:shadow-lg"
           >
-            {loadingProvider === 'azure' ? (
+            {loadingProvider === "azure" ? (
               <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
             ) : (
               /* Microsoft Logo SVG */
@@ -78,11 +90,14 @@ function LoginForm() {
               </svg>
             )}
             <span>
-              {loadingProvider === 'azure' ? 'Đang chuyển hướng Microsoft...' : 'Đăng nhập bằng Email Trường (Microsoft)'}
+              {loadingProvider === "azure"
+                ? "Đang chuyển hướng Microsoft..."
+                : "Đăng nhập bằng Email Trường (Microsoft)"}
             </span>
           </button>
           <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-amber-400 text-slate-950 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm flex items-center gap-1">
-            <Sparkles className="w-3 h-3 fill-slate-950" /> Khuyên dùng cho Sinh viên
+            <Sparkles className="w-3 h-3 fill-slate-950" /> Khuyên dùng cho Sinh
+            viên
           </span>
         </div>
 
@@ -96,11 +111,11 @@ function LoginForm() {
 
         {/* Google Login Button (For Personal Gmail / Alumni) */}
         <button
-          onClick={() => handleOAuthLogin('google')}
+          onClick={() => handleOAuthLogin("google")}
           disabled={loadingProvider !== null}
           className="w-full py-3.5 px-4 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-xl font-semibold text-sm shadow-sm transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
-          {loadingProvider === 'google' ? (
+          {loadingProvider === "google" ? (
             <div className="w-5 h-5 border-2 border-slate-400 border-t-blue-600 rounded-full animate-spin" />
           ) : (
             /* Google Logo SVG */
@@ -124,13 +139,19 @@ function LoginForm() {
             </svg>
           )}
           <span>
-            {loadingProvider === 'google' ? 'Đang chuyển hướng Google...' : 'Đăng nhập bằng Gmail (Cá nhân / Cựu SV)'}
+            {loadingProvider === "google"
+              ? "Đang chuyển hướng Google..."
+              : "Đăng nhập bằng Gmail (Cá nhân)"}
           </span>
         </button>
       </div>
 
       <div className="mt-8 text-center text-xs text-slate-400 dark:text-slate-500">
-        Email trường (<code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-600">@e.tlu.edu.vn</code>) sẽ được tự động đồng bộ vai trò Sinh viên khi đăng nhập thành công.
+        Email trường (
+        <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-600">
+          @e.tlu.edu.vn
+        </code>
+        ) sẽ được tự động đồng bộ vai trò Sinh viên khi đăng nhập thành công.
       </div>
     </div>
   );
@@ -140,7 +161,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-800">
-        
         {/* Left Side: Branding & Value Props */}
         <div className="p-8 md:p-10 bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex flex-col justify-between relative overflow-hidden">
           <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
@@ -151,21 +171,27 @@ export default function LoginPage() {
               <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
                 <GraduationCap className="w-7 h-7 text-white" />
               </div>
-              <span className="font-bold text-xl tracking-tight">TLU Learning</span>
+              <span className="font-bold text-xl tracking-tight">
+                TLU Learning
+              </span>
             </div>
 
             <h1 className="text-2xl md:text-3xl font-extrabold leading-tight mb-4">
               Cộng đồng Chia sẻ Tài liệu Sinh viên TLU
             </h1>
             <p className="text-blue-100 text-sm leading-relaxed mb-8">
-              Truy cập hàng ngàn đề thi, slide giảng dạy, giáo trình và bài tập lớn được đóng góp bởi sinh viên Đại học Thủy lợi.
+              Truy cập hàng ngàn đề thi, slide giảng dạy, giáo trình và bài tập
+              lớn được đóng góp bởi sinh viên Đại học Thủy lợi.
             </p>
           </div>
 
           <div className="space-y-4">
             <div className="flex items-center space-x-3 text-sm text-blue-50">
               <BookOpen className="w-5 h-5 text-blue-200 shrink-0" />
-              <span>Đăng nhập trực tiếp bằng tài khoản Microsoft Office 365 nhà trường</span>
+              <span>
+                Đăng nhập trực tiếp bằng tài khoản Microsoft Office 365 nhà
+                trường
+              </span>
             </div>
             <div className="flex items-center space-x-3 text-sm text-blue-50">
               <FileText className="w-5 h-5 text-blue-200 shrink-0" />
@@ -183,10 +209,15 @@ export default function LoginPage() {
         </div>
 
         {/* Right Side: Login Actions wrapped in Suspense */}
-        <Suspense fallback={<div className="p-8 text-center text-slate-500 text-sm">Đang tải...</div>}>
+        <Suspense
+          fallback={
+            <div className="p-8 text-center text-slate-500 text-sm">
+              Đang tải...
+            </div>
+          }
+        >
           <LoginForm />
         </Suspense>
-
       </div>
     </div>
   );
