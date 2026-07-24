@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createPostAction } from '@/app/actions/post';
-import { FACULTIES_DATA } from '@/lib/constants';
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createPostAction } from "@/app/actions/post";
+import { FACULTIES_DATA } from "@/lib/constants";
 import {
   Upload,
   Link as LinkIcon,
@@ -14,8 +14,8 @@ import {
   Info,
   ArrowLeft,
   GraduationCap,
-} from 'lucide-react';
-import Link from 'next/link';
+} from "lucide-react";
+import Link from "next/link";
 
 interface SubjectOption {
   id: string;
@@ -28,10 +28,10 @@ interface PostCreateFormProps {
 }
 
 const categories = [
-  { value: 'dethi', label: '📝 Đề thi & Đáp án' },
-  { value: 'slide', label: '📊 Slide Bài giảng' },
-  { value: 'doan', label: '💻 Bài tập lớn / Đồ án' },
-  { value: 'giaotrinh', label: '📚 Giáo trình & Sách' },
+  { value: "dethi", label: "📝 Đề thi & Đáp án" },
+  { value: "slide", label: "📊 Slide Bài giảng" },
+  { value: "doan", label: "💻 Bài tập lớn / Đồ án" },
+  { value: "giaotrinh", label: "📚 Giáo trình & Sách" },
 ];
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -41,18 +41,18 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
 
   // Subject Toggle State
   const [isNewSubject, setIsNewSubject] = useState(false);
-  const [selectedSubjectId, setSelectedSubjectId] = useState('');
-  const [newSubjectCode, setNewSubjectCode] = useState('');
-  const [newSubjectName, setNewSubjectName] = useState('');
+  const [selectedSubjectId, setSelectedSubjectId] = useState("");
+  const [newSubjectCode, setNewSubjectCode] = useState("");
+  const [newSubjectName, setNewSubjectName] = useState("");
   const [selectedFacultyIndex, setSelectedFacultyIndex] = useState<number>(0);
   const [selectedDepartment, setSelectedDepartment] = useState<string>(
-    FACULTIES_DATA[0]?.departments[0] || ''
+    FACULTIES_DATA[0]?.departments[0] || "",
   );
 
   // File / Link Attachment State
-  const [attachMode, setAttachMode] = useState<'file' | 'link'>('file');
+  const [attachMode, setAttachMode] = useState<"file" | "link">("file");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [externalLink, setExternalLink] = useState('');
+  const [externalLink, setExternalLink] = useState("");
 
   // Form State
   const [fileError, setFileError] = useState<string | null>(null);
@@ -60,7 +60,8 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const currentFaculty = FACULTIES_DATA[selectedFacultyIndex] || FACULTIES_DATA[0];
+  const currentFaculty =
+    FACULTIES_DATA[selectedFacultyIndex] || FACULTIES_DATA[0];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -70,7 +71,7 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
     if (file) {
       if (file.size > MAX_FILE_SIZE) {
         setFileError(
-          'File vượt quá 5MB. Vui lòng upload lên Google Drive/Fshare và sử dụng phương thức dán Link.'
+          "File vượt quá 5MB. Vui lòng upload lên Google Drive/Fshare và sử dụng phương thức dán Link.",
         );
         setSelectedFile(null);
         return;
@@ -89,36 +90,39 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
     const formEl = e.currentTarget;
     const formData = new FormData(formEl);
 
-    formData.set('isNewSubject', isNewSubject ? 'true' : 'false');
-    formData.set('attachMode', attachMode);
+    formData.set("isNewSubject", isNewSubject ? "true" : "false");
+    formData.set("attachMode", attachMode);
 
     if (isNewSubject) {
-      formData.set('newSubjectCode', newSubjectCode.trim());
-      formData.set('newSubjectName', newSubjectName.trim());
-      formData.set('newSubjectFaculty', currentFaculty.name);
-      formData.set('newSubjectDepartment', selectedDepartment || currentFaculty.departments[0] || '');
+      formData.set("newSubjectCode", newSubjectCode.trim());
+      formData.set("newSubjectName", newSubjectName.trim());
+      formData.set("newSubjectFaculty", currentFaculty.name);
+      formData.set(
+        "newSubjectDepartment",
+        selectedDepartment || currentFaculty.departments[0] || "",
+      );
     } else {
-      formData.set('subjectId', selectedSubjectId);
+      formData.set("subjectId", selectedSubjectId);
     }
 
-    if (attachMode === 'file') {
+    if (attachMode === "file") {
       if (!selectedFile) {
-        setFileError('Vui lòng chọn tệp tin cần tải lên.');
+        setFileError("Vui lòng chọn tệp tin cần tải lên.");
         return;
       }
       if (selectedFile.size > MAX_FILE_SIZE) {
         setFileError(
-          'File vượt quá 5MB. Vui lòng upload lên Google Drive/Fshare và sử dụng phương thức dán Link.'
+          "File vượt quá 5MB. Vui lòng upload lên Google Drive/Fshare và sử dụng phương thức dán Link.",
         );
         return;
       }
-      formData.set('file', selectedFile);
+      formData.set("file", selectedFile);
     } else {
       if (!externalLink.trim()) {
-        setServerError('Vui lòng nhập đường dẫn (URL) tài liệu.');
+        setServerError("Vui lòng nhập đường dẫn (URL) tài liệu.");
         return;
       }
-      formData.set('externalLink', externalLink.trim());
+      formData.set("externalLink", externalLink.trim());
     }
 
     try {
@@ -126,16 +130,19 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
       const res = await createPostAction(formData);
 
       if (res.success) {
-        setSuccessMessage(res.message || 'Tài liệu đã được gửi thành công và đang chờ Admin duyệt!');
+        setSuccessMessage(
+          res.message ||
+            "Tài liệu đã được gửi thành công và đang chờ Admin duyệt!",
+        );
         setTimeout(() => {
-          router.push('/');
+          router.push("/");
           router.refresh();
         }, 2000);
       } else {
-        setServerError(res.error || 'Đã xảy ra lỗi khi đăng bài.');
+        setServerError(res.error || "Đã xảy ra lỗi khi đăng bài.");
       }
     } catch (err: any) {
-      setServerError(err.message || 'Đã xảy ra lỗi hệ thống.');
+      setServerError(err.message || "Đã xảy ra lỗi hệ thống.");
     } finally {
       setLoading(false);
     }
@@ -143,7 +150,6 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-300">
-      
       {/* Top Header */}
       <div className="flex items-center justify-between">
         <Link
@@ -156,7 +162,6 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-xl">
-        
         {/* Title */}
         <div className="mb-8 border-b border-slate-100 dark:border-slate-800 pb-5">
           <div className="flex items-center space-x-3 mb-2">
@@ -168,7 +173,8 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                 Đăng Tải Tài Liệu Mới
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Chia sẻ đề thi, bài giảng hoặc đồ án mẫu cho cộng đồng sinh viên Thủy Lợi.
+                Chia sẻ đề thi, bài giảng hoặc đồ án mẫu cho cộng đồng sinh viên
+                Thủy Lợi.
               </p>
             </div>
           </div>
@@ -195,7 +201,6 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
-            
             {serverError && (
               <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs sm:text-sm flex items-start space-x-3">
                 <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
@@ -205,11 +210,11 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
 
             {/* 1. Dynamic Subject Selection & Toggle */}
             <div className="space-y-3 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
-              
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <GraduationCap className="w-4 h-4 text-blue-600" />
-                  <span>Chọn Môn học</span> <span className="text-red-500">*</span>
+                  <span>Chọn Môn học</span>{" "}
+                  <span className="text-red-500">*</span>
                 </label>
 
                 {/* Checkbox Toggle: Môn học của tôi chưa có trong danh sách */}
@@ -247,14 +252,18 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                 <div className="space-y-4 pt-2 animate-in fade-in duration-200 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-blue-200 dark:border-blue-900/60">
                   <div className="flex items-center space-x-2 text-xs font-bold text-blue-700 dark:text-blue-300">
                     <BookPlus className="w-4 h-4 text-blue-500" />
-                    <span>Tạo môn học mới (Tự động chuẩn hóa mã môn & kiểm tra trùng lặp)</span>
+                    <span>
+                      Tạo môn học mới (Tự động chuẩn hóa mã môn & kiểm tra trùng
+                      lặp)
+                    </span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {/* New Subject Code */}
                     <div className="space-y-1">
                       <label className="text-[11px] font-extrabold uppercase text-slate-500">
-                        Mã môn học (Ví dụ: INT1234) <span className="text-red-500">*</span>
+                        Mã môn học (Ví dụ: INT1234){" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -293,7 +302,9 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                         onChange={(e) => {
                           const idx = parseInt(e.target.value, 10);
                           setSelectedFacultyIndex(idx);
-                          setSelectedDepartment(FACULTIES_DATA[idx]?.departments[0] || '');
+                          setSelectedDepartment(
+                            FACULTIES_DATA[idx]?.departments[0] || "",
+                          );
                         }}
                         className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none"
                       >
@@ -325,7 +336,6 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                   </div>
                 </div>
               )}
-
             </div>
 
             {/* Select Category */}
@@ -377,7 +387,8 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
             {/* Attachment Options (2 Tabs / Modes) */}
             <div className="space-y-3 pt-2">
               <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                Phương thức đính kèm tài liệu <span className="text-red-500">*</span>
+                Phương thức đính kèm tài liệu{" "}
+                <span className="text-red-500">*</span>
               </label>
 
               {/* Mode Toggle Buttons */}
@@ -385,38 +396,38 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                 <button
                   type="button"
                   onClick={() => {
-                    setAttachMode('file');
+                    setAttachMode("file");
                     setFileError(null);
                   }}
                   className={`py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm border transition-all flex items-center justify-center space-x-2 cursor-pointer ${
-                    attachMode === 'file'
-                      ? 'bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-700 dark:text-blue-300 shadow-sm'
-                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                    attachMode === "file"
+                      ? "bg-blue-50 dark:bg-blue-950/60 border-blue-500 text-blue-700 dark:text-blue-300 shadow-sm"
+                      : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100"
                   }`}
                 >
                   <Upload className="w-4 h-4" />
-                  <span>Phương thức A: Upload File trực tiếp (≤ 5MB)</span>
+                  <span>Upload File trực tiếp (≤ 5MB)</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => {
-                    setAttachMode('link');
+                    setAttachMode("link");
                     setFileError(null);
                   }}
                   className={`py-3 px-4 rounded-2xl font-bold text-xs sm:text-sm border transition-all flex items-center justify-center space-x-2 cursor-pointer ${
-                    attachMode === 'link'
-                      ? 'bg-purple-50 dark:bg-purple-950/60 border-purple-500 text-purple-700 dark:text-purple-300 shadow-sm'
-                      : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                    attachMode === "link"
+                      ? "bg-purple-50 dark:bg-purple-950/60 border-purple-500 text-purple-700 dark:text-purple-300 shadow-sm"
+                      : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100"
                   }`}
                 >
                   <LinkIcon className="w-4 h-4" />
-                  <span>Phương thức B: Chèn Link ngoài (Google Drive / Fshare)</span>
+                  <span>Chèn Link ngoài (Google Drive / Fshare)</span>
                 </button>
               </div>
 
               {/* Option A: Direct File Upload */}
-              {attachMode === 'file' && (
+              {attachMode === "file" && (
                 <div className="space-y-3 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-dashed border-slate-300 dark:border-slate-700">
                   <div className="text-center space-y-2">
                     <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center mx-auto">
@@ -433,7 +444,8 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                         />
                       </label>
                       <p className="text-xs text-slate-400 mt-1">
-                        Định dạng hỗ trợ: PDF, DOCX, ZIP, PNG, JPG (Dung lượng tối đa 5MB)
+                        Định dạng hỗ trợ: PDF, DOCX, ZIP, PNG, JPG (Dung lượng
+                        tối đa 5MB)
                       </p>
                     </div>
                   </div>
@@ -462,7 +474,7 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
               )}
 
               {/* Option B: External Link */}
-              {attachMode === 'link' && (
+              {attachMode === "link" && (
                 <div className="space-y-3 p-5 rounded-2xl bg-purple-50/40 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-900/50">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
@@ -480,12 +492,13 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                   <div className="flex items-start space-x-2 text-xs text-purple-700 dark:text-purple-300">
                     <Info className="w-4 h-4 shrink-0 mt-0.5 text-purple-500" />
                     <span>
-                      Mẹo: Với tài liệu lớn hơn 5MB, hãy tải lên Google Drive của bạn và cài đặt quyền truy cập *"Bất kỳ ai có liên kết đều có thể xem"*.
+                      Mẹo: Với tài liệu lớn hơn 5MB, hãy tải lên Google Drive
+                      của bạn và cài đặt quyền truy cập *"Bất kỳ ai có liên kết
+                      đều có thể xem"*.
                     </span>
                   </div>
                 </div>
               )}
-
             </div>
 
             {/* Submit Button */}
@@ -498,13 +511,13 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
                 {loading && (
                   <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 )}
-                <span>{loading ? 'Đang gửi tài liệu...' : 'Gửi duyệt tài liệu'}</span>
+                <span>
+                  {loading ? "Đang gửi tài liệu..." : "Gửi duyệt tài liệu"}
+                </span>
               </button>
             </div>
-
           </form>
         )}
-
       </div>
     </div>
   );

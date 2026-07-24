@@ -26,6 +26,11 @@ export const metadata: Metadata = {
     'Slide giảng dạy TLU',
     'Đồ án TLU',
   ],
+  icons: {
+    icon: '/Logo-DH-Thuy-Loi.webp',
+    shortcut: '/Logo-DH-Thuy-Loi.webp',
+    apple: '/Logo-DH-Thuy-Loi.webp',
+  },
 };
 
 export default async function RootLayout({

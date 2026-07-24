@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Filter, RotateCcw, Flame, Clock } from 'lucide-react';
+import { Search, RotateCcw, X } from 'lucide-react';
 
 interface SubjectOption {
   id: string;
@@ -64,7 +64,7 @@ export function PostFilter({ subjects }: PostFilterProps) {
   const hasActiveFilters = Boolean(q || category || subject || (sort && sort !== 'newest'));
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm space-y-4">
+    <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-slate-800/80 p-4 sm:p-5 shadow-sm space-y-4">
       
       {/* Search Input Bar */}
       <form onSubmit={handleSearchSubmit} className="flex gap-2">
@@ -72,30 +72,42 @@ export function PostFilter({ subjects }: PostFilterProps) {
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Tìm theo tiêu đề bài viết hoặc Mã môn học (ví dụ: INT1234)..."
+            placeholder="Tìm theo tên môn học, mã môn hoặc tiêu đề bài viết (ví dụ: CSE301, Toán cao cấp)..."
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors"
+            className="w-full pl-10 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs sm:text-sm rounded-xl outline-none focus:border-blue-500 transition-colors placeholder:text-slate-400"
           />
+          {q && (
+            <button
+              type="button"
+              onClick={() => {
+                setQ('');
+                updateFilters({ q: null });
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
         <button
           type="submit"
-          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-sm transition-colors cursor-pointer shrink-0"
+          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl font-bold text-xs sm:text-sm shadow-sm transition-all cursor-pointer shrink-0"
         >
           Tìm kiếm
         </button>
       </form>
 
       {/* Filter Selects & Category Badges */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
         
         {/* Category Pills */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full no-scrollbar">
           <button
             onClick={() => updateFilters({ category: null })}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               !category
-                ? 'bg-blue-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -104,9 +116,9 @@ export function PostFilter({ subjects }: PostFilterProps) {
 
           <button
             onClick={() => updateFilters({ category: 'dethi' })}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               category === 'dethi'
-                ? 'bg-amber-600 text-white shadow-sm'
+                ? 'bg-amber-500 text-slate-950 font-black shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -115,9 +127,9 @@ export function PostFilter({ subjects }: PostFilterProps) {
 
           <button
             onClick={() => updateFilters({ category: 'slide' })}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               category === 'slide'
-                ? 'bg-blue-600 text-white shadow-sm'
+                ? 'bg-blue-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -126,9 +138,9 @@ export function PostFilter({ subjects }: PostFilterProps) {
 
           <button
             onClick={() => updateFilters({ category: 'doan' })}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               category === 'doan'
-                ? 'bg-purple-600 text-white shadow-sm'
+                ? 'bg-purple-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -137,9 +149,9 @@ export function PostFilter({ subjects }: PostFilterProps) {
 
           <button
             onClick={() => updateFilters({ category: 'giaotrinh' })}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
               category === 'giaotrinh'
-                ? 'bg-emerald-600 text-white shadow-sm'
+                ? 'bg-emerald-600 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
             }`}
           >
@@ -153,7 +165,7 @@ export function PostFilter({ subjects }: PostFilterProps) {
           <select
             value={subject}
             onChange={(e) => updateFilters({ subject: e.target.value || null })}
-            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-xl outline-none"
+            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl outline-none cursor-pointer max-w-[200px]"
           >
             <option value="">Lọc theo Môn học...</option>
             {subjects.map((sub) => (
@@ -167,20 +179,20 @@ export function PostFilter({ subjects }: PostFilterProps) {
           <select
             value={sort}
             onChange={(e) => updateFilters({ sort: e.target.value })}
-            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-xl outline-none"
+            className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl outline-none cursor-pointer"
           >
             <option value="newest">🕒 Mới nhất</option>
-            <option value="votes">🔥 Đóng góp / Nổi bật nhất</option>
+            <option value="votes">🔥 Nổi bật / Nhiều bình chọn</option>
           </select>
 
           {/* Reset Filter Button */}
           {hasActiveFilters && (
             <button
               onClick={handleReset}
-              className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              title="Xóa bộ lọc"
+              className="p-2 text-red-500 hover:text-red-600 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/50 border border-red-200 dark:border-red-900 transition-colors cursor-pointer"
+              title="Xóa tất cả bộ lọc"
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -189,3 +201,4 @@ export function PostFilter({ subjects }: PostFilterProps) {
     </div>
   );
 }
+

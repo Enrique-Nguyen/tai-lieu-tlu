@@ -1,10 +1,16 @@
-'use server';
+"use server";
 
-import { createClient } from '@/lib/server';
-import { revalidatePath } from 'next/cache';
+import { createClient } from "@/lib/server";
+import { revalidatePath } from "next/cache";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB limit
-const VALID_CATEGORIES = ['dethi', 'slide', 'doan', 'giaotrinh'];
+// Mapping from frontend slug -> DB enum value (posts_category_check constraint)
+const CATEGORY_MAP: Record<string, string> = {
+  dethi: "Đề thi",
+  slide: "Slide bài giảng",
+  doan: "Đồ án mẫu",
+  giaotrinh: "Sách/Giáo trình",
+};
 
 export async function createPostAction(formData: FormData) {
   try {
@@ -17,54 +23,59 @@ export async function createPostAction(formData: FormData) {
     if (authError || !user) {
       return {
         success: false,
-        error: 'Bạn cần đăng nhập để tải lên tài liệu.',
+        error: "Bạn cần đăng nhập để tải lên tài liệu.",
       };
     }
 
-    const title = (formData.get('title') as string)?.trim();
-    const description = (formData.get('description') as string)?.trim();
-    const categoryRaw = formData.get('category') as string;
-    const isNewSubject = formData.get('isNewSubject') === 'true';
+    const title = (formData.get("title") as string)?.trim();
+    const description = (formData.get("description") as string)?.trim();
+    const categoryRaw = formData.get("category") as string;
+    const isNewSubject = formData.get("isNewSubject") === "true";
 
-    const attachMode = formData.get('attachMode') as 'file' | 'link';
-    const externalLink = (formData.get('externalLink') as string)?.trim();
+    const attachMode = formData.get("attachMode") as "file" | "link";
+    const externalLink = (formData.get("externalLink") as string)?.trim();
 
     if (!title) {
-      return { success: false, error: 'Vui lòng nhập tiêu đề tài liệu.' };
+      return { success: false, error: "Vui lòng nhập tiêu đề tài liệu." };
     }
 
     if (!categoryRaw) {
-      return { success: false, error: 'Vui lòng chọn Danh mục tài liệu.' };
+      return { success: false, error: "Vui lòng chọn Danh mục tài liệu." };
     }
 
-    // Ensure category satisfies posts_category_check constraint
-    const category = VALID_CATEGORIES.includes(categoryRaw) ? categoryRaw : 'giaotrinh';
+    // Map slug to actual DB enum value (posts_category_check constraint)
+    const category = CATEGORY_MAP[categoryRaw] ?? null;
+    if (!category) {
+      return { success: false, error: "Danh mục tài liệu không hợp lệ. Vui lòng chọn lại." };
+    }
 
     let finalSubjectId: string | null = null;
 
     // --- Subject Resolution Logic ---
     if (isNewSubject) {
-      const rawCode = (formData.get('newSubjectCode') as string) || '';
-      const rawName = (formData.get('newSubjectName') as string) || '';
-      const faculty = (formData.get('newSubjectFaculty') as string) || 'Công nghệ Thông tin';
-      const department = (formData.get('newSubjectDepartment') as string) || 'Kỹ thuật Phần mềm';
+      const rawCode = (formData.get("newSubjectCode") as string) || "";
+      const rawName = (formData.get("newSubjectName") as string) || "";
+      const faculty =
+        (formData.get("newSubjectFaculty") as string) || "Công nghệ Thông tin";
+      const department =
+        (formData.get("newSubjectDepartment") as string) || "Kỹ thuật Phần mềm";
 
       if (!rawCode.trim()) {
-        return { success: false, error: 'Vui lòng nhập Mã môn học mới.' };
+        return { success: false, error: "Vui lòng nhập Mã môn học mới." };
       }
       if (!rawName.trim()) {
-        return { success: false, error: 'Vui lòng nhập Tên môn học mới.' };
+        return { success: false, error: "Vui lòng nhập Tên môn học mới." };
       }
 
       // Step 1: Normalize Subject Code (Strip spaces & Convert to UPPERCASE)
-      const normalizedCode = rawCode.trim().replace(/\s+/g, '').toUpperCase();
+      const normalizedCode = rawCode.trim().replace(/\s+/g, "").toUpperCase();
       const trimmedName = rawName.trim();
 
       // Step 2: Query database case-insensitively using ilike
       const { data: existingSubject } = await supabase
-        .from('subjects')
-        .select('id')
-        .ilike('code', normalizedCode)
+        .from("subjects")
+        .select("id")
+        .ilike("code", normalizedCode)
         .maybeSingle();
 
       if (existingSubject) {
@@ -73,18 +84,18 @@ export async function createPostAction(formData: FormData) {
       } else {
         // Step 4: Subject does NOT exist -> Create new record in DB with faculty AND department
         const { data: newSubject, error: subError } = await supabase
-          .from('subjects')
+          .from("subjects")
           .insert({
             code: normalizedCode,
             name: trimmedName,
             faculty: faculty,
             department: department,
           })
-          .select('id')
+          .select("id")
           .single();
 
         if (subError) {
-          console.error('Lỗi khi tạo môn học mới:', subError);
+          console.error("Lỗi khi tạo môn học mới:", subError);
           return {
             success: false,
             error: `Tạo môn học mới thất bại: ${subError.message}`,
@@ -94,21 +105,21 @@ export async function createPostAction(formData: FormData) {
         finalSubjectId = newSubject.id;
       }
     } else {
-      finalSubjectId = formData.get('subjectId') as string;
+      finalSubjectId = formData.get("subjectId") as string;
       if (!finalSubjectId) {
-        return { success: false, error: 'Vui lòng chọn Môn học từ danh sách.' };
+        return { success: false, error: "Vui lòng chọn Môn học từ danh sách." };
       }
     }
 
     // --- Attachment Handling ---
     let finalFileUrl: string | null = null;
-    let finalFileType: string = 'external_link';
+    let finalFileType: string = "external_link";
 
-    if (attachMode === 'file') {
-      const file = formData.get('file') as File | null;
+    if (attachMode === "file") {
+      const file = formData.get("file") as File | null;
 
       if (!file || file.size === 0) {
-        return { success: false, error: 'Vui lòng chọn tệp tin cần tải lên.' };
+        return { success: false, error: "Vui lòng chọn tệp tin cần tải lên." };
       }
 
       // Validate File Size (Max 5MB)
@@ -116,39 +127,39 @@ export async function createPostAction(formData: FormData) {
         return {
           success: false,
           error:
-            'File vượt quá 5MB. Vui lòng upload lên Google Drive/Fshare và sử dụng phương thức dán Link.',
+            "File vượt quá 5MB. Vui lòng upload lên Google Drive/Fshare và sử dụng phương thức dán Link.",
         };
       }
 
       // Determine File Type
       const fileName = file.name;
-      const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+      const fileExt = fileName.split(".").pop()?.toLowerCase() || "";
 
-      if (['pdf'].includes(fileExt)) {
-        finalFileType = 'pdf';
-      } else if (['docx', 'doc'].includes(fileExt)) {
-        finalFileType = 'docx';
-      } else if (['zip', 'rar', '7z'].includes(fileExt)) {
-        finalFileType = 'zip';
-      } else if (['png', 'jpg', 'jpeg', 'webp'].includes(fileExt)) {
-        finalFileType = 'image';
+      if (["pdf"].includes(fileExt)) {
+        finalFileType = "pdf";
+      } else if (["docx", "doc"].includes(fileExt)) {
+        finalFileType = "docx";
+      } else if (["zip", "rar", "7z"].includes(fileExt)) {
+        finalFileType = "zip";
+      } else if (["png", "jpg", "jpeg", "webp"].includes(fileExt)) {
+        finalFileType = "image";
       } else {
-        finalFileType = fileExt || 'other';
+        finalFileType = fileExt || "other";
       }
 
       // Upload file to Supabase Storage 'documents' bucket
-      const sanitizedName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const sanitizedName = fileName.replace(/[^a-zA-Z0-9.-]/g, "_");
       const filePath = `${user.id}/${Date.now()}_${sanitizedName}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('documents')
+        .from("documents")
         .upload(filePath, file, {
-          cacheControl: '3600',
+          cacheControl: "3600",
           upsert: true,
         });
 
       if (uploadError) {
-        console.error('Storage upload error:', uploadError);
+        console.error("Storage upload error:", uploadError);
         return {
           success: false,
           error: `Tải tệp tin thất bại: ${uploadError.message}. Vui lòng chuyển sang phương thức dán Link.`,
@@ -158,13 +169,16 @@ export async function createPostAction(formData: FormData) {
       // Get Public URL
       const {
         data: { publicUrl },
-      } = supabase.storage.from('documents').getPublicUrl(uploadData.path);
+      } = supabase.storage.from("documents").getPublicUrl(uploadData.path);
 
       finalFileUrl = publicUrl;
     } else {
       // Option B: External Link
       if (!externalLink) {
-        return { success: false, error: 'Vui lòng nhập đường dẫn (URL) tài liệu.' };
+        return {
+          success: false,
+          error: "Vui lòng nhập đường dẫn (URL) tài liệu.",
+        };
       }
 
       try {
@@ -173,16 +187,16 @@ export async function createPostAction(formData: FormData) {
         return {
           success: false,
           error:
-            'Đường dẫn (URL) không hợp lệ. Vui lòng nhập URL hợp lệ bắt đầu bằng http:// hoặc https://',
+            "Đường dẫn (URL) không hợp lệ. Vui lòng nhập URL hợp lệ bắt đầu bằng http:// hoặc https://",
         };
       }
 
       finalFileUrl = externalLink;
-      finalFileType = 'external_link';
+      finalFileType = "external_link";
     }
 
     // --- Insert Record into `posts` Table ---
-    const { error: insertError } = await supabase.from('posts').insert({
+    const { error: insertError } = await supabase.from("posts").insert({
       title,
       description: description || null,
       subject_id: finalSubjectId,
@@ -190,26 +204,26 @@ export async function createPostAction(formData: FormData) {
       category,
       file_url: finalFileUrl,
       file_type: finalFileType,
-      status: 'pending', // Awaiting moderation
+      status: "pending", // Awaiting admin moderation
     });
 
     if (insertError) {
-      console.error('Insert post error:', insertError);
+      console.error("Insert post error:", insertError);
       throw insertError;
     }
 
-    revalidatePath('/');
-    revalidatePath('/my-posts');
+    revalidatePath("/");
+    revalidatePath("/my-posts");
 
     return {
       success: true,
-      message: 'Tài liệu đã được gửi thành công và đang chờ Admin duyệt!',
+      message: "Tài liệu đã được gửi thành công và đang chờ Admin duyệt!",
     };
   } catch (err: any) {
-    console.error('Lỗi khi tạo bài viết:', err);
+    console.error("Lỗi khi tạo tài liệu:", err);
     return {
       success: false,
-      error: err.message || 'Đã xảy ra lỗi khi tạo bài viết.',
+      error: err.message || "Đã xảy ra lỗi khi tạo tài liệu.",
     };
   }
 }

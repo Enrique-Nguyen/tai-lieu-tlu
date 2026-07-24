@@ -2,12 +2,12 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/lib/client";
 import {
   BookOpen,
   ShieldCheck,
   FileText,
-  GraduationCap,
   AlertCircle,
   Sparkles,
 } from "lucide-react";
@@ -162,21 +162,32 @@ export default function LoginPage() {
     <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-800">
         {/* Left Side: Branding & Value Props */}
-        <div className="p-8 md:p-10 bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none" />
+        <div className="p-8 md:p-10 bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 text-white flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-48 h-48 bg-sky-400/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
 
           <div>
             <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2.5 bg-white/10 backdrop-blur-md rounded-xl border border-white/20">
-                <GraduationCap className="w-7 h-7 text-white" />
+              <div className="w-12 h-12 rounded-2xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                <Image
+                  src="/Logo-DH-Thuy-Loi.webp"
+                  alt="TLU Logo"
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-contain"
+                />
               </div>
-              <span className="font-bold text-xl tracking-tight">
-                TLU Learning
-              </span>
+              <div className="flex flex-col">
+                <span className="font-black text-xl tracking-tight text-white">
+                  TLU Tài Liệu
+                </span>
+                <span className="text-xs text-blue-200 font-semibold">
+                  Đại Học Thủy Lợi
+                </span>
+              </div>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-extrabold leading-tight mb-4">
+            <h1 className="text-2xl md:text-3xl font-black leading-tight mb-4">
               Cộng đồng Chia sẻ Tài liệu Sinh viên TLU
             </h1>
             <p className="text-blue-100 text-sm leading-relaxed mb-8">
@@ -187,18 +198,18 @@ export default function LoginPage() {
 
           <div className="space-y-4">
             <div className="flex items-center space-x-3 text-sm text-blue-50">
-              <BookOpen className="w-5 h-5 text-blue-200 shrink-0" />
+              <BookOpen className="w-5 h-5 text-sky-300 shrink-0" />
               <span>
                 Đăng nhập trực tiếp bằng tài khoản Microsoft Office 365 nhà
                 trường
               </span>
             </div>
             <div className="flex items-center space-x-3 text-sm text-blue-50">
-              <FileText className="w-5 h-5 text-blue-200 shrink-0" />
+              <FileText className="w-5 h-5 text-sky-300 shrink-0" />
               <span>Đề thi & Đáp án cập nhật theo từng học kỳ</span>
             </div>
             <div className="flex items-center space-x-3 text-sm text-blue-50">
-              <ShieldCheck className="w-5 h-5 text-blue-200 shrink-0" />
+              <ShieldCheck className="w-5 h-5 text-sky-300 shrink-0" />
               <span>Xác thực tài khoản an toàn & Bảo mật</span>
             </div>
           </div>
