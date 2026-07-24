@@ -20,6 +20,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
   const errorParam = searchParams.get("error");
+  const errorDescription = searchParams.get("error_description");
 
   const handleOAuthLogin = async (provider: "azure" | "google") => {
     try {
@@ -33,6 +34,7 @@ function LoginForm() {
         provider,
         options: {
           redirectTo,
+          scopes: provider === "azure" ? "email openid profile" : undefined,
           queryParams: {
             prompt: "select_account",
           },
@@ -49,6 +51,13 @@ function LoginForm() {
     }
   };
 
+  const displayError =
+    errorMessage ||
+    errorDescription ||
+    (errorParam
+      ? `Đã xảy ra lỗi xác thực (${errorParam}). Vui lòng kiểm tra lại cấu hình Provider trên Supabase.`
+      : null);
+
   return (
     <div className="p-8 md:p-10 flex flex-col justify-center">
       <div className="text-center md:text-left mb-6">
@@ -60,13 +69,13 @@ function LoginForm() {
         </p>
       </div>
 
-      {(errorMessage || errorParam) && (
+      {displayError && (
         <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-sm flex items-start space-x-3">
           <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <span>
-            {errorMessage ||
-              "Đã xảy ra lỗi xác thực. Vui lòng kiểm tra lại cấu hình Provider trên Supabase."}
-          </span>
+          <div className="space-y-1">
+            <span className="font-semibold block">Lỗi đăng nhập:</span>
+            <span className="break-words">{displayError}</span>
+          </div>
         </div>
       )}
 

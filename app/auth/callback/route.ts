@@ -4,7 +4,17 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
+  const errorParam = searchParams.get('error');
+  const errorDesc = searchParams.get('error_description');
   const next = searchParams.get('next') ?? '/';
+
+  // Handle errors sent directly by OAuth provider (Azure/Google)
+  if (errorParam || errorDesc) {
+    const errorUrl = new URL('/login', origin);
+    errorUrl.searchParams.set('error', errorParam || 'oauth_error');
+    if (errorDesc) errorUrl.searchParams.set('error_description', errorDesc);
+    return NextResponse.redirect(errorUrl.toString());
+  }
 
   if (code) {
     const supabase = await createClient();
@@ -28,30 +38,46 @@ export async function GET(request: Request) {
       // Sync user profile in database
       const { data: existingUser } = await supabase
         .from('users')
-        .select('id')
+        .select('id, is_profile_completed')
         .eq('id', user.id)
         .single();
 
+      let isProfileCompleted = existingUser?.is_profile_completed ?? false;
+
       if (!existingUser) {
+        // Create new user record with is_profile_completed = false
         await supabase.from('users').insert({
           id: user.id,
           email: user.email,
           full_name: fullName,
           avatar_url: avatarUrl,
-          role: 'student', // Default role for new sign ups
+          role: 'student',
+          is_profile_completed: false,
         });
+        isProfileCompleted = false;
       }
 
       const forwardedHost = request.headers.get('x-forwarded-host');
       const isLocalEnv = process.env.NODE_ENV === 'development';
+      const baseUrl = isLocalEnv
+        ? origin
+        : forwardedHost
+        ? `https://${forwardedHost}`
+        : origin;
 
-      if (isLocalEnv) {
-        return NextResponse.redirect(`${origin}${next}`);
-      } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`);
-      } else {
-        return NextResponse.redirect(`${origin}${next}`);
+      // Mandatory profile completion check
+      if (!isProfileCompleted) {
+        return NextResponse.redirect(`${baseUrl}/profile?incomplete=true`);
       }
+
+      return NextResponse.redirect(`${baseUrl}${next}`);
+    }
+
+    if (error) {
+      const errorUrl = new URL('/login', origin);
+      errorUrl.searchParams.set('error', 'auth-callback-failed');
+      errorUrl.searchParams.set('error_description', error.message);
+      return NextResponse.redirect(errorUrl.toString());
     }
   }
 

@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { UserNav } from '@/components/user-nav';
-import { UserProfile } from '@/lib/auth';
-import { Search, Plus, Menu, X, Sparkles } from 'lucide-react';
+import { useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { UserNav } from "@/components/user-nav";
+import { UserProfile } from "@/lib/auth";
+import { Search, Plus, Menu, X, Sparkles } from "lucide-react";
 
 interface HeaderProps {
   profile: UserProfile | null;
@@ -14,7 +14,7 @@ interface HeaderProps {
 }
 
 export function Header({ profile, onToggleMobileSidebar }: HeaderProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
 
   const handleSearch = (e: React.FormEvent) => {
@@ -25,14 +25,13 @@ export function Header({ profile, onToggleMobileSidebar }: HeaderProps) {
   };
 
   const clearSearch = () => {
-    setSearchQuery('');
-    router.push('/');
+    setSearchQuery("");
+    router.push("/");
   };
 
   return (
     <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-slate-200/80 dark:border-slate-800/80 transition-colors shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
-        
         {/* Left: Mobile Menu Toggle & TLU Logo */}
         <div className="flex items-center space-x-3">
           <button
@@ -57,7 +56,8 @@ export function Header({ profile, onToggleMobileSidebar }: HeaderProps) {
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
                 <span className="font-black text-lg tracking-tight text-slate-900 dark:text-white">
-                  TLU <span className="text-blue-600 dark:text-sky-400">Tài Liệu</span>
+                  Tài liệu{" "}
+                  <span className="text-blue-600 dark:text-sky-400">TLU</span>
                 </span>
                 <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-black bg-blue-100 dark:bg-sky-950/80 text-blue-700 dark:text-sky-300 border border-blue-200 dark:border-sky-800">
                   HUB
@@ -137,4 +137,3 @@ export function Header({ profile, onToggleMobileSidebar }: HeaderProps) {
     </header>
   );
 }
-
