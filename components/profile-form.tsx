@@ -116,7 +116,7 @@ export function ProfileForm({
 
   const [fullName, setFullName] = useState(initialProfile.full_name || "");
   const [academicYear, setAcademicYear] = useState(
-    initialProfile.academic_year || ACADEMIC_YEARS[2].value
+    initialProfile.academic_year || ""
   );
   const [major, setMajor] = useState(
     initialProfile.major || FACULTIES_DATA[0].departments[0]
@@ -459,25 +459,21 @@ export function ProfileForm({
               />
             </div>
 
-            {/* Academic Year Select */}
+            {/* Academic Year Input */}
             <div className="space-y-2">
               <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <GraduationCap className="w-4 h-4 text-blue-600" />
                 <span>Niên khóa</span> <span className="text-red-500">*</span>
               </label>
-              <select
+              <input
+                type="text"
                 required
                 disabled={isLocked}
+                placeholder='v.d: K67. Với người không học tại trường vui lòng điền "Khác"'
                 value={academicYear}
                 onChange={(e) => setAcademicYear(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {ACADEMIC_YEARS.map((ay) => (
-                  <option key={ay.value} value={ay.value}>
-                    {ay.label}
-                  </option>
-                ))}
-              </select>
+              />
             </div>
 
             {/* Major Dropdown Select */}
@@ -502,20 +498,27 @@ export function ProfileForm({
                     ))}
                   </optgroup>
                 ))}
+                <optgroup label="Khác">
+                  <option value="Khác">Khác (Dành cho người không thuộc TLU)</option>
+                </optgroup>
               </select>
             </div>
 
-            {/* Student Class Input */}
+            {/* Student Class Input (Optional) */}
             <div className="space-y-2">
-              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-blue-600" />
-                <span>Lớp sinh hoạt</span> <span className="text-red-500">*</span>
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <span>Lớp sinh hoạt</span>
+                </span>
+                <span className="text-[11px] font-semibold text-slate-400">
+                  (Không bắt buộc)
+                </span>
               </label>
               <input
                 type="text"
-                required
                 disabled={isLocked}
-                placeholder="Ví dụ: 64CNTT2 hoặc CNTT2-K66"
+                placeholder="Ví dụ: 64CNTT2 hoặc CNTT2-K66 (Có thể bỏ qua nếu không thuộc TLU)"
                 value={studentClass}
                 onChange={(e) => setStudentClass(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase"

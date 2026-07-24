@@ -64,7 +64,7 @@ export async function updateProfileAction(formData: FormData) {
     const fullName = (formData.get("fullName") as string)?.trim();
     const academicYear = (formData.get("academicYear") as string)?.trim();
     const major = (formData.get("major") as string)?.trim();
-    const studentClass = (formData.get("studentClass") as string)?.trim();
+    const studentClass = (formData.get("studentClass") as string)?.trim() || null;
     const presetAvatar = (formData.get("presetAvatar") as string)?.trim();
     const avatarFile = formData.get("avatarFile") as File | null;
 
@@ -73,15 +73,11 @@ export async function updateProfileAction(formData: FormData) {
     }
 
     if (!academicYear) {
-      return { success: false, error: "Vui lòng chọn Niên khóa." };
+      return { success: false, error: "Vui lòng nhập Niên khóa (ví dụ: K67 hoặc Khác)." };
     }
 
     if (!major) {
       return { success: false, error: "Vui lòng chọn Chuyên ngành." };
-    }
-
-    if (!studentClass) {
-      return { success: false, error: "Vui lòng nhập Lớp sinh hoạt." };
     }
 
     // 3. Resolve Avatar URL
