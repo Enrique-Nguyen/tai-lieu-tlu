@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, Flame, Sparkles, FileText, FileQuestion, Award, CheckCircle2, ShieldCheck } from 'lucide-react';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 3;
 
 // Mapping from URL slug -> DB enum value (posts_category_check)
 const CATEGORY_SLUG_TO_DB: Record<string, string> = {
@@ -22,6 +22,8 @@ interface HomePageProps {
     q?: string;
     category?: string;
     subject?: string;
+    faculty?: string;
+    department?: string;
     sort?: string;
     page?: string;
   }>;
@@ -32,6 +34,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const q = resolvedParams.q || '';
   const category = resolvedParams.category || '';
   const subject = resolvedParams.subject || '';
+  const faculty = resolvedParams.faculty || '';
+  const department = resolvedParams.department || '';
   const sort = resolvedParams.sort || 'newest';
   const currentPage = Math.max(1, parseInt(resolvedParams.page || '1', 10));
 
@@ -60,7 +64,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       file_url,
       category,
       created_at,
-      subjects:subject_id (id, code, name, faculty),
+      subjects:subject_id!inner (id, code, name, faculty, department),
       author:author_id (id, full_name, avatar_url),
       votes (user_id, vote_type)
     `,
@@ -75,6 +79,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   if (subject) {
     query = query.eq('subject_id', subject);
+  }
+
+  if (faculty) {
+    query = query.ilike('subjects.faculty', `%${faculty}%`);
+  }
+
+  if (department) {
+    query = query.ilike('subjects.department', `%${department}%`);
   }
 
   if (q) {

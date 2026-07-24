@@ -38,17 +38,6 @@ interface ProfileFormProps {
   isIncompleteQuery: boolean;
 }
 
-const ACADEMIC_YEARS = [
-  { value: "K68 (2024 - 2028)", label: "K68 (2024 - 2028)" },
-  { value: "K67 (2023 - 2027)", label: "K67 (2023 - 2027)" },
-  { value: "K66 (2022 - 2026)", label: "K66 (2022 - 2026)" },
-  { value: "K65 (2021 - 2025)", label: "K65 (2021 - 2025)" },
-  { value: "K64 (2020 - 2024)", label: "K64 (2020 - 2024)" },
-  { value: "K63 (2019 - 2023)", label: "K63 (2019 - 2023)" },
-  { value: "K62 (2018 - 2022)", label: "K62 (2018 - 2022)" },
-  { value: "Cựu Sinh Viên", label: "Cựu Sinh Viên" },
-];
-
 const PRESET_AVATARS = [
   "https://api.dicebear.com/7.x/bottts/svg?seed=TLU_Student_1",
   "https://api.dicebear.com/7.x/bottts/svg?seed=TLU_Student_2",
@@ -64,7 +53,7 @@ const PRESET_AVATARS = [
 function compressAndCropToWebP(
   file: File,
   targetSize = 400,
-  quality = 0.85
+  quality = 0.85,
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -82,7 +71,17 @@ function compressAndCropToWebP(
         const sx = (img.width - minDim) / 2;
         const sy = (img.height - minDim) / 2;
 
-        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
+        ctx.drawImage(
+          img,
+          sx,
+          sy,
+          minDim,
+          minDim,
+          0,
+          0,
+          targetSize,
+          targetSize,
+        );
 
         canvas.toBlob(
           (blob) => {
@@ -93,7 +92,7 @@ function compressAndCropToWebP(
             }
           },
           "image/webp",
-          quality
+          quality,
         );
       };
       img.onerror = () => reject(new Error("Tệp ảnh không hợp lệ"));
@@ -116,23 +115,23 @@ export function ProfileForm({
 
   const [fullName, setFullName] = useState(initialProfile.full_name || "");
   const [academicYear, setAcademicYear] = useState(
-    initialProfile.academic_year || ""
+    initialProfile.academic_year || "",
   );
   const [major, setMajor] = useState(
-    initialProfile.major || FACULTIES_DATA[0].departments[0]
+    initialProfile.major || FACULTIES_DATA[0].name,
   );
   const [studentClass, setStudentClass] = useState(
-    initialProfile.student_class || ""
+    initialProfile.student_class || "",
   );
 
   // Avatar states
   const [avatarMode, setAvatarMode] = useState<"preset" | "upload">("preset");
   const [selectedPreset, setSelectedPreset] = useState<string>(
-    initialProfile.avatar_url || PRESET_AVATARS[0]
+    initialProfile.avatar_url || PRESET_AVATARS[0],
   );
   const [customFile, setCustomFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(
-    initialProfile.avatar_url || null
+    initialProfile.avatar_url || null,
   );
   const [isCompressing, setIsCompressing] = useState(false);
 
@@ -216,9 +215,9 @@ export function ProfileForm({
               Hoàn thiện thông tin cá nhân bắt buộc
             </h3>
             <p className="text-xs sm:text-sm text-blue-100 leading-relaxed">
-              Vui lòng cập nhật đầy đủ Họ tên, Niên khóa, Chuyên ngành và Lớp sinh
-              hoạt để tiếp tục truy cập và sử dụng tất cả tính năng trên hệ thống
-              Tài liệu TLU.
+              Vui lòng cập nhật đầy đủ Họ tên, Niên khóa, Chuyên ngành và Lớp
+              sinh hoạt để tiếp tục truy cập và sử dụng tất cả tính năng trên hệ
+              thống Tài liệu TLU.
             </p>
           </div>
         </div>
@@ -333,7 +332,9 @@ export function ProfileForm({
                     {isCompressing ? (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900/60 text-white gap-1">
                         <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
-                        <span className="text-[9px] font-bold">Đang nén...</span>
+                        <span className="text-[9px] font-bold">
+                          Đang nén...
+                        </span>
                       </div>
                     ) : (
                       <img
@@ -459,7 +460,7 @@ export function ProfileForm({
               />
             </div>
 
-            {/* Academic Year Input */}
+            {/* Academic Year Text Input */}
             <div className="space-y-2">
               <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <GraduationCap className="w-4 h-4 text-blue-600" />
@@ -469,9 +470,9 @@ export function ProfileForm({
                 type="text"
                 required
                 disabled={isLocked}
-                placeholder='v.d: K67. Với người không học tại trường vui lòng điền "Khác"'
                 value={academicYear}
                 onChange={(e) => setAcademicYear(e.target.value)}
+                placeholder='v.d: K67. Với người không học tại trường vui lòng điền "Khác"'
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
@@ -480,7 +481,7 @@ export function ProfileForm({
             <div className="space-y-2">
               <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                 <BookOpen className="w-4 h-4 text-blue-600" />
-                <span>Chuyên ngành</span> <span className="text-red-500">*</span>
+                <span>Khoa/Ngành</span> <span className="text-red-500">*</span>
               </label>
               <select
                 required
@@ -489,36 +490,26 @@ export function ProfileForm({
                 onChange={(e) => setMajor(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                <option value="">-- Chọn Khoa/Ngành --</option>
                 {FACULTIES_DATA.map((fac) => (
-                  <optgroup key={fac.name} label={`Khoa: ${fac.name}`}>
-                    {fac.departments.map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
-                    ))}
-                  </optgroup>
+                  <option key={fac.name} value={fac.name}>
+                    {fac.name}
+                  </option>
                 ))}
-                <optgroup label="Khác">
-                  <option value="Khác">Khác (Dành cho người không thuộc TLU)</option>
-                </optgroup>
               </select>
             </div>
 
-            {/* Student Class Input (Optional) */}
+            {/* Student Class Input */}
             <div className="space-y-2">
-              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <Users className="w-4 h-4 text-blue-600" />
-                  <span>Lớp sinh hoạt</span>
-                </span>
-                <span className="text-[11px] font-semibold text-slate-400">
-                  (Không bắt buộc)
-                </span>
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-blue-600" />
+                <span>Lớp sinh hoạt</span>{" "}
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 disabled={isLocked}
-                placeholder="Ví dụ: 64CNTT2 hoặc CNTT2-K66 (Có thể bỏ qua nếu không thuộc TLU)"
+                placeholder="Ví dụ: 67CNTT2"
                 value={studentClass}
                 onChange={(e) => setStudentClass(e.target.value)}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase"
@@ -530,11 +521,13 @@ export function ProfileForm({
               <div className="text-xs text-slate-400">
                 {isLocked ? (
                   <span className="flex items-center gap-1 text-amber-600 font-semibold">
-                    <Lock className="w-3.5 h-3.5" /> Đang trong thời gian khóa 90
-                    ngày
+                    <Lock className="w-3.5 h-3.5" /> Đang trong thời gian khóa
+                    90 ngày
                   </span>
                 ) : (
-                  <span>* Lưu ý: Mỗi lần cập nhật thông tin cách nhau 90 ngày</span>
+                  <span>
+                    * Lưu ý: Mỗi lần cập nhật thông tin cách nhau 90 ngày
+                  </span>
                 )}
               </div>
 
@@ -550,8 +543,8 @@ export function ProfileForm({
                   {loading
                     ? "Đang lưu..."
                     : isLocked
-                    ? "Đã bị khóa chỉnh sửa"
-                    : "Lưu thông tin hồ sơ"}
+                      ? "Đã bị khóa chỉnh sửa"
+                      : "Lưu thông tin hồ sơ"}
                 </span>
               </button>
             </div>

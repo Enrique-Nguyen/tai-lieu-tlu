@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
+import { FACULTIES_DATA } from "@/lib/constants";
 import {
   Computer,
   Flame,
@@ -22,20 +24,25 @@ import {
   Scale,
   Sparkles,
   UploadCloud,
+  ChevronDown,
+  ChevronRight,
+  Layers,
+  GraduationCap,
 } from "lucide-react";
 
-const faculties = [
-  { name: "Công nghệ thông tin", code: "cntt", icon: Computer },
-  { name: "Kinh tế & Quản lý", code: "kinh-te", icon: LineChart },
-  { name: "Luật & Lý luận chính trị", code: "luat", icon: Scale },
-  { name: "Điện - Điện tử", code: "dien-dien-tu", icon: Cpu },
-  { name: "Công trình", code: "cong-trinh", icon: HardHat },
-  { name: "Kỹ thuật tài nguyên nước", code: "nuoc", icon: Droplets },
-  { name: "Hóa & Môi trường", code: "hoa-mt", icon: FlaskConical },
-  { name: "Cơ khí", code: "co-khi", icon: Wrench },
-  { name: "Kế toán & Kinh doanh", code: "ke-toan", icon: Banknote },
-  { name: "Đào tạo Quốc tế", code: "quoc-te", icon: Globe },
-];
+// Icon mapping for Faculties
+const facultyIconMap: Record<string, any> = {
+  "Công nghệ Thông tin": Computer,
+  "Kinh tế và Quản lý": LineChart,
+  "Luật và Lý luận chính trị": Scale,
+  "Điện - Điện tử": Cpu,
+  "Công trình": HardHat,
+  "Kỹ thuật tài nguyên nước": Droplets,
+  "Hóa và môi trường": FlaskConical,
+  "Cơ khí": Wrench,
+  "Kế toán và Kinh doanh": Banknote,
+  "Trung tâm đào tạo quốc tế": Globe,
+};
 
 const categories = [
   {
@@ -78,11 +85,23 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
   const currentCategory = searchParams.get("category");
   const currentSort = searchParams.get("sort");
   const currentQ = searchParams.get("q");
+  const currentFaculty = searchParams.get("faculty");
+  const currentDepartment = searchParams.get("department");
+
+  // Track expanded faculty index for accordion UI
+  const [expandedFaculty, setExpandedFaculty] = useState<string | null>(
+    currentFaculty || null
+  );
+
+  const toggleExpand = (facName: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setExpandedFaculty((prev) => (prev === facName ? null : facName));
+  };
 
   return (
     <aside className="w-64 shrink-0 p-4 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-r border-slate-200/80 dark:border-slate-800/80 min-h-[calc(100vh-4rem)] overflow-y-auto space-y-6">
-      
-      {/* Brand Mini Badge inside Sidebar */}
+      {/* Brand Mini Badge */}
       <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-transparent dark:from-blue-900/30 dark:via-indigo-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/40">
         <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-800 p-1 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
           <Image
@@ -114,12 +133,28 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
             href="/"
             onClick={onCloseMobile}
             className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 ${
-              pathname === "/" && !currentCategory && !currentSort && !currentQ
+              pathname === "/" &&
+              !currentCategory &&
+              !currentSort &&
+              !currentQ &&
+              !currentFaculty &&
+              !currentDepartment
                 ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
                 : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80"
             }`}
           >
-            <BookOpen className={`w-4 h-4 shrink-0 ${pathname === "/" && !currentCategory && !currentSort && !currentQ ? "text-white" : "text-blue-500"}`} />
+            <BookOpen
+              className={`w-4 h-4 shrink-0 ${
+                pathname === "/" &&
+                !currentCategory &&
+                !currentSort &&
+                !currentQ &&
+                !currentFaculty &&
+                !currentDepartment
+                  ? "text-white"
+                  : "text-blue-500"
+              }`}
+            />
             <span>Tất cả tài liệu</span>
           </Link>
 
@@ -132,11 +167,21 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
                 : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80"
             }`}
           >
-            <Flame className={`w-4 h-4 shrink-0 ${currentSort === "votes" ? "text-slate-950" : "text-amber-500 animate-bounce"}`} />
+            <Flame
+              className={`w-4 h-4 shrink-0 ${
+                currentSort === "votes"
+                  ? "text-slate-950"
+                  : "text-amber-500 animate-bounce"
+              }`}
+            />
             <span>Tài liệu HOT</span>
-            <span className={`ml-auto px-1.5 py-0.5 text-[10px] font-black rounded-full ${
-              currentSort === "votes" ? "bg-slate-950 text-amber-400" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-            }`}>
+            <span
+              className={`ml-auto px-1.5 py-0.5 text-[10px] font-black rounded-full ${
+                currentSort === "votes"
+                  ? "bg-slate-950 text-amber-400"
+                  : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+              }`}
+            >
               TOP
             </span>
           </Link>
@@ -164,8 +209,18 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
                     : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80"
                 }`}
               >
-                <div className={`p-1 rounded-lg transition-colors ${cat.bgColor}`}>
-                  <Icon className={`w-4 h-4 ${isActive ? (pathname === "/" && isActive ? "text-blue-400" : cat.color) : cat.color} shrink-0`} />
+                <div
+                  className={`p-1 rounded-lg transition-colors ${cat.bgColor}`}
+                >
+                  <Icon
+                    className={`w-4 h-4 ${
+                      isActive
+                        ? pathname === "/" && isActive
+                          ? "text-blue-400"
+                          : cat.color
+                        : cat.color
+                    } shrink-0`}
+                  />
                 </div>
                 <span>{cat.name}</span>
               </Link>
@@ -174,36 +229,80 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
         </nav>
       </div>
 
-      {/* Faculties / Majors List */}
+      {/* Interactive Faculties & Departments (Khoa & Bộ môn) */}
       <div>
-        <h3 className="px-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2.5">
-          Khoa & Ngành học
+        <h3 className="px-3 text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2.5 flex items-center justify-between">
+          <span>Khoa & Bộ môn học</span>
+          <GraduationCap className="w-3.5 h-3.5 text-blue-500" />
         </h3>
-        <nav className="space-y-1">
-          {faculties.map((fac) => {
-            const Icon = fac.icon;
-            const href = `/?q=${encodeURIComponent(fac.name)}`;
-            const isActive = currentQ === fac.name;
+
+        <div className="space-y-1">
+          {FACULTIES_DATA.map((fac) => {
+            const Icon = facultyIconMap[fac.name] || Layers;
+            const isFacultyActive = currentFaculty === fac.name;
+            const isExpanded = expandedFaculty === fac.name;
+
             return (
-              <Link
-                key={fac.code}
-                href={href}
-                onClick={onCloseMobile}
-                className={`flex items-center space-x-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? "bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-sky-400 font-bold border border-blue-200 dark:border-blue-800"
-                    : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-slate-200"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                <span className="truncate">{fac.name}</span>
-              </Link>
+              <div key={fac.name} className="space-y-1">
+                {/* Faculty Main Row */}
+                <div className="flex items-center justify-between group">
+                  <Link
+                    href={`/?faculty=${encodeURIComponent(fac.name)}`}
+                    onClick={onCloseMobile}
+                    className={`flex-1 flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all duration-200 truncate ${
+                      isFacultyActive
+                        ? "bg-blue-50 dark:bg-blue-950/80 text-blue-600 dark:text-sky-400 font-bold border border-blue-200 dark:border-blue-800"
+                        : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80"
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-500 shrink-0" />
+                    <span className="truncate">{fac.name}</span>
+                  </Link>
+
+                  {/* Expand/Collapse Departments Toggle */}
+                  <button
+                    type="button"
+                    onClick={(e) => toggleExpand(fac.name, e)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0 cursor-pointer ml-1"
+                    title="Mở rộng danh sách bộ môn"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="w-3.5 h-3.5 text-blue-500" />
+                    ) : (
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Sub-departments List */}
+                {isExpanded && (
+                  <div className="ml-4 pl-3 border-l-2 border-slate-200 dark:border-slate-800 space-y-1 py-1 animate-in fade-in duration-150">
+                    {fac.departments.map((dept) => {
+                      const isDeptActive = currentDepartment === dept;
+                      return (
+                        <Link
+                          key={dept}
+                          href={`/?department=${encodeURIComponent(dept)}`}
+                          onClick={onCloseMobile}
+                          className={`block px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all truncate ${
+                            isDeptActive
+                              ? "bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold"
+                              : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                          }`}
+                        >
+                          • {dept}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
-        </nav>
+        </div>
       </div>
 
-      {/* Student Tip Card with Glassmorphism */}
+      {/* Student Tip Card */}
       <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-lg relative overflow-hidden group">
         <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none group-hover:scale-150 transition-transform duration-500" />
         <div className="flex items-center space-x-2 mb-2">
@@ -226,4 +325,3 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
     </aside>
   );
 }
-
