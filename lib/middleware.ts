@@ -28,7 +28,9 @@ export async function updateSession(request: NextRequest) {
   )
 
   // Validate user session securely
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname
 
@@ -36,7 +38,7 @@ export async function updateSession(request: NextRequest) {
   const protectedPaths = ['/upload', '/profile', '/my-posts', '/admin']
   const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path))
 
-  // If user is NOT logged in and trying to access protected route -> redirect to /login
+  // 1. If user is NOT logged in and trying to access protected route -> redirect to /login
   if (!user && isProtectedPath) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
@@ -44,25 +46,38 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  // If user IS logged in and trying to access /login -> redirect to home page
-  if (user && pathname === '/login') {
-    const url = request.nextUrl.clone()
-    url.pathname = '/'
-    return NextResponse.redirect(url)
-  }
-
-  // Admin route protection: check user role from DB if accessing /admin
-  if (user && pathname.startsWith('/admin')) {
-    const { data: profile } = await supabase
+  // 2. If user IS logged in:
+  if (user) {
+    const { data: dbUser } = await supabase
       .from('users')
-      .select('role')
+      .select('is_profile_completed, role')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
 
-    if (!profile || profile.role !== 'admin') {
+    const isCompleted = dbUser?.is_profile_completed ?? false
+
+    // Mandatory profile completion redirect if not completed and not already on /profile
+    if (!isCompleted && pathname !== '/profile') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/profile'
+      url.searchParams.set('incomplete', 'true')
+      return NextResponse.redirect(url)
+    }
+
+    // If completed and on /login -> redirect to /
+    if (isCompleted && pathname === '/login') {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)
+    }
+
+    // Admin route protection: check user role from DB if accessing /admin
+    if (pathname.startsWith('/admin')) {
+      if (!dbUser || dbUser.role !== 'admin') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/'
+        return NextResponse.redirect(url)
+      }
     }
   }
 
