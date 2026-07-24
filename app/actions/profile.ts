@@ -88,14 +88,6 @@ export async function updateProfileAction(formData: FormData) {
     let finalAvatarUrl: string | null = presetAvatar || null;
 
     if (avatarFile && avatarFile.size > 0) {
-      // Validate file size (max 2MB for avatar)
-      if (avatarFile.size > 2 * 1024 * 1024) {
-        return {
-          success: false,
-          error: "Dung lượng ảnh đại diện vượt quá 2MB. Vui lòng chọn ảnh nhỏ hơn.",
-        };
-      }
-
       // Ensure 'avatars' bucket exists
       try {
         const { data: buckets } = await supabase.storage.listBuckets();
@@ -107,12 +99,13 @@ export async function updateProfileAction(formData: FormData) {
         console.warn("Could not auto-create avatars bucket:", err);
       }
 
-      const fileExt = avatarFile.name.split(".").pop()?.toLowerCase() || "png";
-      const filePath = `${user.id}/${Date.now()}.${fileExt}`;
+      // Structure as avatars/{user_id}.webp and overwrite (upsert: true)
+      const filePath = `${user.id}.webp`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(filePath, avatarFile, {
+          contentType: "image/webp",
           cacheControl: "3600",
           upsert: true,
         });
@@ -125,11 +118,12 @@ export async function updateProfileAction(formData: FormData) {
         };
       }
 
+      // Retrieve public URL with cache-busting timestamp
       const {
         data: { publicUrl },
       } = supabase.storage.from("avatars").getPublicUrl(uploadData.path);
 
-      finalAvatarUrl = publicUrl;
+      finalAvatarUrl = `${publicUrl}?t=${Date.now()}`;
     }
 
     // 4. Update `users` record

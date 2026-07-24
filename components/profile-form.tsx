@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { updateProfileAction } from "@/app/actions/profile";
 import { FACULTIES_DATA } from "@/lib/constants";
 import {
@@ -19,6 +18,7 @@ import {
   Sparkles,
   ShieldCheck,
   Camera,
+  Loader2,
 } from "lucide-react";
 
 interface ProfileFormProps {
@@ -58,6 +58,52 @@ const PRESET_AVATARS = [
   "https://api.dicebear.com/7.x/micah/svg?seed=TLU_Student_6",
 ];
 
+/**
+ * Helper: Crop image to 1:1 square ratio and compress into lightweight .webp Blob
+ */
+function compressAndCropToWebP(
+  file: File,
+  targetSize = 400,
+  quality = 0.85
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = targetSize;
+        canvas.height = targetSize;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("Không thể khởi tạo Canvas"));
+
+        // Calculate 1:1 center crop square
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width - minDim) / 2;
+        const sy = (img.height - minDim) / 2;
+
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, targetSize, targetSize);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("Nén ảnh sang định dạng WebP thất bại"));
+            }
+          },
+          "image/webp",
+          quality
+        );
+      };
+      img.onerror = () => reject(new Error("Tệp ảnh không hợp lệ"));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error("Lỗi khi đọc tệp ảnh"));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function ProfileForm({
   userEmail,
   initialProfile,
@@ -88,22 +134,33 @@ export function ProfileForm({
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     initialProfile.avatar_url || null
   );
+  const [isCompressing, setIsCompressing] = useState(false);
 
   // Status & Feedback
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        setServerError("Dung lượng tệp vượt quá 2MB.");
-        return;
-      }
-      setCustomFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+    if (!file) return;
+
+    try {
+      setIsCompressing(true);
       setServerError(null);
+
+      // Compress and crop image to 400x400 .webp format
+      const webpBlob = await compressAndCropToWebP(file, 400, 0.85);
+      const webpFile = new File([webpBlob], "avatar.webp", {
+        type: "image/webp",
+      });
+
+      setCustomFile(webpFile);
+      setPreviewUrl(URL.createObjectURL(webpBlob));
+    } catch (err: any) {
+      setServerError(err.message || "Đã xảy ra lỗi khi nén ảnh.");
+    } finally {
+      setIsCompressing(false);
     }
   };
 
@@ -180,8 +237,15 @@ export function ProfileForm({
             </h3>
             <p className="text-xs sm:text-sm leading-relaxed text-amber-800 dark:text-amber-300">
               Bạn vừa cập nhật thông tin gần đây. Bạn có thể sửa lại thông tin
-              sau <strong className="text-amber-900 dark:text-white underline decoration-amber-500 font-black">{remainingDays} ngày nữa</strong> (vào ngày{" "}
-              <strong className="text-amber-900 dark:text-white font-extrabold">{unlockDateFormatted}</strong>).
+              sau{" "}
+              <strong className="text-amber-900 dark:text-white underline decoration-amber-500 font-black">
+                {remainingDays} ngày nữa
+              </strong>{" "}
+              (vào ngày{" "}
+              <strong className="text-amber-900 dark:text-white font-extrabold">
+                {unlockDateFormatted}
+              </strong>
+              ).
             </p>
           </div>
         </div>
@@ -252,24 +316,36 @@ export function ProfileForm({
 
             {/* Avatar Selection Section */}
             <div className="space-y-3 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60">
-              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <Camera className="w-4 h-4 text-blue-600" />
-                <span>Ảnh Đại Diện</span>
+              <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Camera className="w-4 h-4 text-blue-600" />
+                  <span>Ảnh Đại Diện</span>
+                </span>
+                <span className="text-[10px] font-medium text-slate-400">
+                  Tự động nén & crop .WebP 1:1
+                </span>
               </label>
 
               <div className="flex flex-col sm:flex-row items-center gap-6">
                 {/* Current Avatar Preview */}
                 <div className="relative shrink-0">
                   <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-blue-500 shadow-md relative bg-slate-200 dark:bg-slate-800">
-                    <img
-                      src={
-                        avatarMode === "upload" && previewUrl
-                          ? previewUrl
-                          : selectedPreset
-                      }
-                      alt="Avatar Preview"
-                      className="w-full h-full object-cover"
-                    />
+                    {isCompressing ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900/60 text-white gap-1">
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-400" />
+                        <span className="text-[9px] font-bold">Đang nén...</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={
+                          avatarMode === "upload" && previewUrl
+                            ? previewUrl
+                            : selectedPreset
+                        }
+                        alt="Avatar Preview"
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -298,7 +374,7 @@ export function ProfileForm({
                           : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
                       }`}
                     >
-                      Upload Tệp Ảnh
+                      Upload Tệp Ảnh (.WebP)
                     </button>
                   </div>
 
@@ -330,23 +406,35 @@ export function ProfileForm({
                   ) : (
                     <div>
                       <label
-                        className={`inline-flex items-center space-x-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-slate-50 cursor-pointer ${
-                          isLocked ? "opacity-50 cursor-not-allowed" : ""
+                        className={`inline-flex items-center space-x-2 px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-slate-50 cursor-pointer ${
+                          isLocked || isCompressing
+                            ? "opacity-50 cursor-not-allowed"
+                            : ""
                         }`}
                       >
-                        <Upload className="w-4 h-4" />
-                        <span>Chọn ảnh từ máy tính (≤ 2MB)</span>
+                        {isCompressing ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Upload className="w-4 h-4" />
+                        )}
+                        <span>
+                          {isCompressing
+                            ? "Đang tự động crop & nén .webp..."
+                            : "Nhấn để chọn ảnh từ máy tính"}
+                        </span>
                         <input
                           type="file"
                           accept="image/*"
-                          disabled={isLocked}
+                          disabled={isLocked || isCompressing}
                           onChange={handleFileChange}
                           className="hidden"
                         />
                       </label>
                       {customFile && (
-                        <p className="text-xs text-slate-500 mt-1 truncate">
-                          Đã chọn: {customFile.name}
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1.5 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Đã tối ưu hóa sang .WebP (Kích thước:{" "}
+                          {(customFile.size / 1024).toFixed(1)} KB)
                         </p>
                       )}
                     </div>
@@ -449,7 +537,7 @@ export function ProfileForm({
 
               <button
                 type="submit"
-                disabled={isLocked || loading}
+                disabled={isLocked || loading || isCompressing}
                 className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 active:from-blue-800 active:to-indigo-800 text-white rounded-xl font-bold text-sm shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center space-x-2"
               >
                 {loading && (
