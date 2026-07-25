@@ -28,6 +28,7 @@ import {
   Layers,
   GraduationCap,
   Bookmark,
+  Info,
 } from "lucide-react";
 
 // Icon mapping for Faculties
@@ -162,6 +163,19 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
           >
             <TrendingUp className="w-4 h-4 shrink-0" />
             <span>Tài liệu nổi bật</span>
+          </Link>
+
+          <Link
+            href="/about"
+            onClick={onCloseMobile}
+            className={`flex items-center space-x-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+              pathname === "/about"
+                ? "bg-blue-600 text-white"
+                : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+          >
+            <Info className="w-4 h-4 shrink-0" />
+            <span>Giới thiệu & Hướng dẫn</span>
           </Link>
         </nav>
       </div>

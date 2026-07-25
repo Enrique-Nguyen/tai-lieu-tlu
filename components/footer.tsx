@@ -54,6 +54,11 @@ export function Footer() {
                   Đóng góp tài liệu mới
                 </Link>
               </li>
+              <li>
+                <Link href="/about" className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                  Giới thiệu & Hướng dẫn
+                </Link>
+              </li>
             </ul>
           </div>
 
