@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { getCurrentUser } from "@/lib/auth";
 import { LayoutShell } from "@/components/layout-shell";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -49,6 +50,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased selection:bg-blue-500 selection:text-white`}
       >
         <LayoutShell profile={profile}>{children}</LayoutShell>
+        <Analytics />
       </body>
     </html>
   );
