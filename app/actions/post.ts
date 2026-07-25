@@ -227,3 +227,45 @@ export async function createPostAction(formData: FormData) {
     };
   }
 }
+
+/**
+ * Delete a post — only the author can delete their own post.
+ */
+export async function deletePostAction(postId: string) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      return { success: false, error: 'Bạn cần đăng nhập để thực hiện thao tác này.' };
+    }
+
+    // Verify ownership
+    const { data: post, error: fetchError } = await supabase
+      .from('posts')
+      .select('id, author_id, file_url')
+      .eq('id', postId)
+      .single();
+
+    if (fetchError || !post) {
+      return { success: false, error: 'Không tìm thấy bài đăng.' };
+    }
+
+    if (post.author_id !== user.id) {
+      return { success: false, error: 'Bạn không có quyền xóa bài đăng này.' };
+    }
+
+    const { error: deleteError } = await supabase.from('posts').delete().eq('id', postId);
+    if (deleteError) throw deleteError;
+
+    revalidatePath('/my-posts');
+    revalidatePath('/');
+    return { success: true };
+  } catch (err: any) {
+    console.error('Lỗi khi xóa bài đăng:', err);
+    return { success: false, error: err.message || 'Xóa bài đăng thất bại.' };
+  }
+}
