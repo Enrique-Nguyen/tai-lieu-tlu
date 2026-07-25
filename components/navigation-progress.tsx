@@ -86,14 +86,14 @@ export function NavigationProgress() {
         className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"
         style={{
           width: `${progress}%`,
-          transition: progress === 0
-            ? 'none'
-            : progress === 100
-            ? 'width 0.1s ease-out'
-            : 'width 0.4s ease-out',
           opacity: visible ? 1 : 0,
           transitionProperty: 'width, opacity',
-          transitionDuration: visible ? '0.1s, 0s' : '0.1s, 0.3s',
+          transitionDuration: progress === 0
+            ? '0s, 0s'
+            : progress === 100
+            ? '0.1s, 0s'
+            : `0.4s, ${visible ? '0s' : '0.3s'}`,
+          transitionTimingFunction: 'ease-out, ease-out',
         }}
       />
     </div>
