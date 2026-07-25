@@ -79,7 +79,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }
 
   if (q) {
-    query = query.or(`title.ilike.%${q}%,description.ilike.%${q}%`);
+    query = query.or(
+      `title.ilike.%${q}%,description.ilike.%${q}%,subjects.name.ilike.%${q}%,subjects.code.ilike.%${q}%`
+    );
   }
 
   // Sorting
