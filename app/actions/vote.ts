@@ -18,6 +18,20 @@ export async function voteAction(postId: string, voteType: 'up' | 'down') {
       };
     }
 
+    // Check if user account is banned
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('status, ban_reason')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (userProfile?.status === 'banned') {
+      return {
+        success: false,
+        error: `Tài khoản của bạn đã bị khóa: ${userProfile.ban_reason || 'Vi phạm quy định'}. Không thể đánh giá bài viết.`,
+      };
+    }
+
     // Map 'up' -> 1, 'down' -> -1 for Postgres integer column compatibility
     const voteValue = voteType === 'up' ? 1 : -1;
 

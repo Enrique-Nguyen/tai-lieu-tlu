@@ -9,6 +9,8 @@ import {
   updateSubjectAction,
   deleteSubjectAction,
   updateUserRoleAction,
+  banUserAction,
+  unbanUserAction,
 } from '@/app/actions/admin';
 import {
   Shield,
@@ -24,6 +26,10 @@ import {
   Search,
   ExternalLink,
   Download,
+  Ban,
+  UserCheck,
+  ShieldAlert,
+  Lock,
 } from 'lucide-react';
 
 interface PendingPost {
@@ -58,6 +64,9 @@ interface UserItem {
   full_name: string | null;
   avatar_url: string | null;
   role: 'student' | 'moderator' | 'admin';
+  status?: 'active' | 'banned';
+  ban_reason?: string | null;
+  banned_at?: string | null;
   academic_year: string | null;
   major: string | null;
 }
@@ -79,10 +88,11 @@ export function AdminDashboard({
   subjects,
   usersList,
 }: AdminDashboardProps) {
-  const [activeTab, setActiveTab] = useState<'pending' | 'reports' | 'subjects' | 'users'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'reports' | 'users' | 'subjects'>('pending');
   const [isPending, startTransition] = useTransition();
 
   const [userSearch, setUserSearch] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'banned'>('all');
 
   // Subject Modal State
   const [subjectModalOpen, setSubjectModalOpen] = useState(false);
@@ -90,6 +100,11 @@ export function AdminDashboard({
   const [subjectCode, setSubjectCode] = useState('');
   const [subjectName, setSubjectName] = useState('');
   const [subjectFaculty, setSubjectFaculty] = useState('');
+
+  // Ban User Modal State
+  const [banModalOpen, setBanModalOpen] = useState(false);
+  const [banningUser, setBanningUser] = useState<UserItem | null>(null);
+  const [banReasonInput, setBanReasonInput] = useState('');
 
   const isAdmin = currentUserRole === 'admin';
 
@@ -173,18 +188,63 @@ export function AdminDashboard({
     });
   };
 
-  const filteredUsers = usersList.filter(
-    (u) =>
+  // 5. Ban & Unban Handlers
+  const handleOpenBanModal = (u: UserItem) => {
+    setBanningUser(u);
+    setBanReasonInput('');
+    setBanModalOpen(true);
+  };
+
+  const handleConfirmBan = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!banningUser || !banReasonInput.trim()) return;
+
+    startTransition(async () => {
+      const res = await banUserAction({
+        targetUserId: banningUser.id,
+        reason: banReasonInput.trim(),
+      });
+
+      if (res.success) {
+        setBanModalOpen(false);
+        setBanningUser(null);
+        setBanReasonInput('');
+      } else {
+        alert(res.error);
+      }
+    });
+  };
+
+  const handleUnbanUser = (u: UserItem) => {
+    if (!confirm(`Bạn có chắc chắn muốn MỞ KHÓA tài khoản của "${u.full_name || u.email}"?`)) return;
+
+    startTransition(async () => {
+      const res = await unbanUserAction({ targetUserId: u.id });
+      if (!res.success && res.error) alert(res.error);
+    });
+  };
+
+  const filteredUsers = usersList.filter((u) => {
+    const matchesSearch =
       u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
-      (u.full_name && u.full_name.toLowerCase().includes(userSearch.toLowerCase()))
-  );
+      (u.full_name && u.full_name.toLowerCase().includes(userSearch.toLowerCase()));
+
+    const status = u.status || 'active';
+    const matchesStatus =
+      userStatusFilter === 'all' || status === userStatusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  const activeCount = usersList.filter((u) => u.status !== 'banned').length;
+  const bannedCount = usersList.filter((u) => u.status === 'banned').length;
 
   const tabs = [
     { id: 'pending' as const, label: `Duyệt bài (${pendingPosts.length})`, icon: FileCheck },
     { id: 'reports' as const, label: `Báo cáo (${reports.length})`, icon: AlertTriangle },
+    { id: 'users' as const, label: `Người dùng (${usersList.length})`, icon: Users },
     ...(isAdmin ? [
       { id: 'subjects' as const, label: `Môn học (${subjects.length})`, icon: BookOpen },
-      { id: 'users' as const, label: `Người dùng (${usersList.length})`, icon: Users },
     ] : []),
   ];
 
@@ -202,7 +262,7 @@ export function AdminDashboard({
             Admin & Moderator Dashboard
           </h1>
           <p className="text-blue-100 text-xs sm:text-sm">
-            Duyệt tài liệu, xử lý báo cáo vi phạm, quản lý danh mục môn học và phân quyền tài khoản.
+            Duyệt tài liệu, xử lý báo cáo vi phạm, quản lý người dùng và trạng thái khóa tài khoản.
           </p>
         </div>
 
@@ -378,7 +438,193 @@ export function AdminDashboard({
         </div>
       )}
 
-      {/* Tab 3: Subjects Management (Admin Only) */}
+      {/* Tab 3: Users Management & Ban/Unban */}
+      {activeTab === 'users' && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center gap-4 flex-wrap">
+            {/* Status Filter Pills */}
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setUserStatusFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  userStatusFilter === 'all'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                }`}
+              >
+                Tất cả ({usersList.length})
+              </button>
+
+              <button
+                onClick={() => setUserStatusFilter('active')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center space-x-1 ${
+                  userStatusFilter === 'active'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                }`}
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Hoạt động ({activeCount})</span>
+              </button>
+
+              <button
+                onClick={() => setUserStatusFilter('banned')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center space-x-1 ${
+                  userStatusFilter === 'banned'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                }`}
+              >
+                <Ban className="w-3.5 h-3.5" />
+                <span>Đã bị khóa ({bannedCount})</span>
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Tìm theo Tên hoặc Email..."
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs rounded-lg outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Users Table */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                  <tr>
+                    <th className="p-4">Người dùng</th>
+                    <th className="p-4">Email</th>
+                    <th className="p-4">Trạng thái</th>
+                    <th className="p-4">Vai trò</th>
+                    <th className="p-4 text-right">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers.map((u) => {
+                      const isSelf = u.id === currentUserId;
+                      const isBanned = u.status === 'banned';
+
+                      return (
+                        <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                          <td className="p-4">
+                            <div className="flex items-center space-x-2.5">
+                              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs overflow-hidden shrink-0">
+                                {u.avatar_url ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={u.avatar_url} alt={u.full_name || 'User'} className="w-full h-full object-cover" />
+                                ) : (
+                                  (u.full_name || u.email)[0].toUpperCase()
+                                )}
+                              </div>
+                              <div>
+                                <span className="font-medium text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                                  {u.full_name || 'Sinh viên'}
+                                  {isSelf && <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-normal">(Bạn)</span>}
+                                </span>
+                                {u.major && <p className="text-[11px] text-slate-400">{u.major}</p>}
+                              </div>
+                            </div>
+                          </td>
+
+                          <td className="p-4 text-xs text-slate-600 dark:text-slate-400">
+                            {u.email}
+                          </td>
+
+                          {/* Status Badge */}
+                          <td className="p-4">
+                            {isBanned ? (
+                              <div className="group relative inline-block">
+                                <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 cursor-help">
+                                  <Ban className="w-3 h-3" />
+                                  <span>Bị khóa</span>
+                                </span>
+                                {u.ban_reason && (
+                                  <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-20 w-48 p-2 bg-slate-900 text-white text-[11px] rounded-lg shadow-lg">
+                                    <strong>Lý do:</strong> {u.ban_reason}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                <UserCheck className="w-3 h-3" />
+                                <span>Hoạt động</span>
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Role Badge / Select */}
+                          <td className="p-4">
+                            {isAdmin ? (
+                              <select
+                                disabled={isSelf || isPending}
+                                value={u.role}
+                                onChange={(e) =>
+                                  handleRoleChange(u.id, e.target.value as 'student' | 'moderator' | 'admin')
+                                }
+                                className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-medium rounded-lg outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                                title={isSelf ? 'Không thể tự đổi quyền của chính mình' : 'Chọn Role'}
+                              >
+                                <option value="student">student</option>
+                                <option value="moderator">moderator</option>
+                                <option value="admin">admin</option>
+                              </select>
+                            ) : (
+                              <span className="px-2 py-1 rounded text-[11px] font-medium bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 capitalize">
+                                {u.role}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Ban / Unban Action */}
+                          <td className="p-4 text-right">
+                            {!isSelf && (
+                              isBanned ? (
+                                <button
+                                  onClick={() => handleUnbanUser(u)}
+                                  disabled={isPending}
+                                  className="px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs font-semibold transition-colors cursor-pointer inline-flex items-center space-x-1"
+                                >
+                                  <UserCheck className="w-3.5 h-3.5" />
+                                  <span>Mở khóa</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleOpenBanModal(u)}
+                                  disabled={isPending}
+                                  className="px-3 py-1.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 rounded-lg text-xs font-semibold transition-colors cursor-pointer inline-flex items-center space-x-1"
+                                >
+                                  <Ban className="w-3.5 h-3.5" />
+                                  <span>Khóa tài khoản</span>
+                                </button>
+                              )
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={5} className="p-8 text-center text-slate-500 text-xs">
+                        Không tìm thấy người dùng nào phù hợp!
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 4: Subjects Management (Admin Only) */}
       {activeTab === 'subjects' && isAdmin && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -433,99 +679,6 @@ export function AdminDashboard({
                       </td>
                     </tr>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab 4: Users Management & RBAC Roles (Admin Only) */}
-      {activeTab === 'users' && isAdmin && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center gap-4 flex-wrap">
-            <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100">
-              Quản lý Phân quyền ({filteredUsers.length})
-            </h3>
-
-            <div className="relative w-full sm:w-72">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Tìm theo Tên hoặc Email..."
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs rounded-lg outline-none focus:border-blue-500"
-              />
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800">
-                  <tr>
-                    <th className="p-4">Người dùng</th>
-                    <th className="p-4">Email</th>
-                    <th className="p-4">Khoa / Niên khóa</th>
-                    <th className="p-4">Vai trò</th>
-                    <th className="p-4 text-right">Phân quyền</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {filteredUsers.map((u) => {
-                    const isSelf = u.id === currentUserId;
-                    return (
-                      <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
-                        <td className="p-4">
-                          <div className="flex items-center space-x-2.5">
-                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs overflow-hidden shrink-0">
-                              {u.avatar_url ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={u.avatar_url} alt={u.full_name || 'User'} className="w-full h-full object-cover" />
-                              ) : (
-                                (u.full_name || u.email)[0].toUpperCase()
-                              )}
-                            </div>
-                            <span className="font-medium text-slate-900 dark:text-slate-100">
-                              {u.full_name || 'Sinh viên'}{' '}
-                              {isSelf && <span className="text-xs text-blue-500 font-normal">(Bạn)</span>}
-                            </span>
-                          </div>
-                        </td>
-
-                        <td className="p-4 text-xs text-slate-600 dark:text-slate-400">
-                          {u.email}
-                        </td>
-
-                        <td className="p-4 text-xs text-slate-500">
-                          {u.academic_year || ''} {u.major ? `• ${u.major}` : ''}
-                        </td>
-
-                        <td className="p-4">
-                          <span className="px-2 py-1 rounded text-[11px] font-medium bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 capitalize">
-                            {u.role}
-                          </span>
-                        </td>
-
-                        <td className="p-4 text-right">
-                          <select
-                            disabled={isSelf || isPending}
-                            value={u.role}
-                            onChange={(e) =>
-                              handleRoleChange(u.id, e.target.value as 'student' | 'moderator' | 'admin')
-                            }
-                            className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-medium rounded-lg outline-none disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={isSelf ? 'Không thể tự đổi quyền của chính mình' : 'Chọn Role'}
-                          >
-                            <option value="student">student</option>
-                            <option value="moderator">moderator</option>
-                            <option value="admin">admin</option>
-                          </select>
-                        </td>
-                      </tr>
-                    );
-                  })}
                 </tbody>
               </table>
             </div>
@@ -593,6 +746,61 @@ export function AdminDashboard({
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
                 >
                   Lưu môn học
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Ban User Modal */}
+      {banModalOpen && banningUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setBanModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-xl p-6 shadow-xl z-10 space-y-4 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center space-x-2 text-red-600 dark:text-red-400">
+              <ShieldAlert className="w-5 h-5" />
+              <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                Khóa tài khoản người dùng
+              </h3>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Bạn đang thực hiện khóa tài khoản{' '}
+              <strong className="text-slate-900 dark:text-slate-100">{banningUser.full_name || banningUser.email}</strong> ({banningUser.email}).
+              Người dùng bị khóa sẽ không thể đăng bài, bình luận hoặc sử dụng các tính năng tương tác.
+            </p>
+
+            <form onSubmit={handleConfirmBan} className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Lý do khóa tài khoản <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Ví dụ: Vi phạm quy chuẩn cộng đồng, đăng nội dung rác hoặc không phù hợp..."
+                  value={banReasonInput}
+                  onChange={(e) => setBanReasonInput(e.target.value)}
+                  className="w-full mt-1.5 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none focus:border-red-500 transition-colors"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setBanModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-200"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending || !banReasonInput.trim()}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center space-x-1"
+                >
+                  <Ban className="w-3.5 h-3.5" />
+                  <span>Xác nhận khóa</span>
                 </button>
               </div>
             </form>

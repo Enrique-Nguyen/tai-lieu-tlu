@@ -27,6 +27,20 @@ export async function createPostAction(formData: FormData) {
       };
     }
 
+    // Check if user account is banned
+    const { data: userProfile } = await supabase
+      .from("users")
+      .select("status, ban_reason")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (userProfile?.status === "banned") {
+      return {
+        success: false,
+        error: `Tài khoản của bạn đã bị khóa: ${userProfile.ban_reason || "Vi phạm quy định"}. Không thể tải lên tài liệu.`,
+      };
+    }
+
     const title = (formData.get("title") as string)?.trim();
     const description = (formData.get("description") as string)?.trim();
     const categoryRaw = formData.get("category") as string;

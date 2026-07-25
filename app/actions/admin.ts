@@ -282,3 +282,114 @@ export async function updateUserRoleAction({
     return { success: false, error: err.message || 'Phân quyền người dùng thất bại.' };
   }
 }
+
+/**
+ * 7. Ban User (Admin & Moderator)
+ */
+export async function banUserAction({
+  targetUserId,
+  reason,
+}: {
+  targetUserId: string;
+  reason: string;
+}) {
+  try {
+    const { user, isAdmin, isMod } = await checkAdminOrMod();
+
+    if (!isAdmin && !isMod) {
+      return { success: false, error: 'Bạn không có quyền khóa tài khoản người dùng.' };
+    }
+
+    if (!user) {
+      return { success: false, error: 'Bạn chưa đăng nhập.' };
+    }
+
+    if (targetUserId === user.id) {
+      return { success: false, error: 'Bạn không thể tự khóa tài khoản của chính mình.' };
+    }
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      return { success: false, error: 'Vui lòng nhập lý do khóa tài khoản.' };
+    }
+
+    const payload = {
+      status: 'banned',
+      ban_reason: trimmedReason,
+      banned_at: new Date().toISOString(),
+    };
+
+    const adminClient = createAdminClient();
+
+    if (adminClient) {
+      const { error: adminErr } = await adminClient
+        .from('users')
+        .update(payload)
+        .eq('id', targetUserId);
+
+      if (adminErr) throw adminErr;
+    } else {
+      const supabase = await createClient();
+      const { error } = await supabase
+        .from('users')
+        .update(payload)
+        .eq('id', targetUserId);
+
+      if (error) throw error;
+    }
+
+    revalidatePath('/admin');
+    return { success: true, message: 'Đã khóa tài khoản người dùng thành công.' };
+  } catch (err: any) {
+    console.error('Lỗi khi khóa tài khoản:', err);
+    return { success: false, error: err.message || 'Khóa tài khoản thất bại.' };
+  }
+}
+
+/**
+ * 8. Unban User (Admin & Moderator)
+ */
+export async function unbanUserAction({ targetUserId }: { targetUserId: string }) {
+  try {
+    const { user, isAdmin, isMod } = await checkAdminOrMod();
+
+    if (!isAdmin && !isMod) {
+      return { success: false, error: 'Bạn không có quyền mở khóa tài khoản.' };
+    }
+
+    if (!user) {
+      return { success: false, error: 'Bạn chưa đăng nhập.' };
+    }
+
+    const payload = {
+      status: 'active',
+      ban_reason: null,
+      banned_at: null,
+    };
+
+    const adminClient = createAdminClient();
+
+    if (adminClient) {
+      const { error: adminErr } = await adminClient
+        .from('users')
+        .update(payload)
+        .eq('id', targetUserId);
+
+      if (adminErr) throw adminErr;
+    } else {
+      const supabase = await createClient();
+      const { error } = await supabase
+        .from('users')
+        .update(payload)
+        .eq('id', targetUserId);
+
+      if (error) throw error;
+    }
+
+    revalidatePath('/admin');
+    return { success: true, message: 'Đã mở khóa tài khoản người dùng.' };
+  } catch (err: any) {
+    console.error('Lỗi khi mở khóa tài khoản:', err);
+    return { success: false, error: err.message || 'Mở khóa tài khoản thất bại.' };
+  }
+}

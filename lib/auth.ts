@@ -7,6 +7,9 @@ export interface UserProfile {
   full_name: string | null;
   avatar_url: string | null;
   role: 'student' | 'moderator' | 'admin';
+  status?: 'active' | 'banned';
+  ban_reason?: string | null;
+  banned_at?: string | null;
   academic_year: string | null;
   major: string | null;
   student_class: string | null;
@@ -40,6 +43,9 @@ export const getCurrentUser = cache(async () => {
         full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Sinh viên',
         avatar_url: user.user_metadata?.avatar_url || null,
         role: 'student',
+        status: 'active',
+        ban_reason: null,
+        banned_at: null,
         academic_year: null,
         major: null,
         student_class: null,

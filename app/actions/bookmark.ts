@@ -19,6 +19,21 @@ export async function toggleBookmarkAction({ postId }: { postId: string }) {
       };
     }
 
+    // Check if user account is banned
+    const { data: userProfile } = await supabase
+      .from("users")
+      .select("status, ban_reason")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (userProfile?.status === "banned") {
+      return {
+        success: false,
+        isBookmarked: false,
+        error: `Tài khoản của bạn đã bị khóa: ${userProfile.ban_reason || "Vi phạm quy định"}. Không thể thực hiện thao tác lưu tài liệu.`,
+      };
+    }
+
     // Check if post is already bookmarked
     const { data: existing } = await supabase
       .from("bookmarks")

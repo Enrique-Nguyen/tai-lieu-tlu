@@ -26,6 +26,20 @@ export async function addCommentAction({
       };
     }
 
+    // Check if user account is banned
+    const { data: userProfile } = await supabase
+      .from('users')
+      .select('status, ban_reason')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (userProfile?.status === 'banned') {
+      return {
+        success: false,
+        error: `Tài khoản của bạn đã bị khóa: ${userProfile.ban_reason || 'Vi phạm quy định'}. Không thể đăng bình luận.`,
+      };
+    }
+
     const trimmedContent = content.trim();
     if (!trimmedContent) {
       return {

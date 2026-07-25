@@ -33,9 +33,10 @@ export async function proxy(request: NextRequest) {
   const protectedPaths = ['/upload', '/profile', '/my-posts', '/admin']
   const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path))
   const isLoginPath = pathname === '/login'
+  const isBannedPath = pathname === '/banned'
 
-  // If path is public and not login/admin/protected, return early without DB calls
-  if (!isProtectedPath && !isLoginPath && !pathname.startsWith('/admin')) {
+  // If path is public and not login/admin/protected/banned, return early without DB calls
+  if (!isProtectedPath && !isLoginPath && !pathname.startsWith('/admin') && !isBannedPath) {
     return supabaseResponse
   }
 
@@ -44,21 +45,46 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // 1. If user is NOT logged in and trying to access protected route -> redirect to /login
-  if (!user && isProtectedPath) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    url.searchParams.set('next', pathname)
-    return NextResponse.redirect(url)
+  // 1. If user is NOT logged in
+  if (!user) {
+    if (isProtectedPath) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.searchParams.set('next', pathname)
+      return NextResponse.redirect(url)
+    }
+    if (isBannedPath) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
   }
 
   // 2. If user IS logged in:
   if (user) {
     const { data: dbUser } = await supabase
       .from('users')
-      .select('is_profile_completed, role')
+      .select('is_profile_completed, role, status')
       .eq('id', user.id)
       .maybeSingle()
+
+    // Banned check: If user status is 'banned' and not on /banned -> redirect to /banned
+    if (dbUser?.status === 'banned') {
+      if (!isBannedPath) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/banned'
+        return NextResponse.redirect(url)
+      }
+      return supabaseResponse
+    }
+
+    // If user is NOT banned but on /banned -> redirect to /
+    if (isBannedPath && dbUser?.status !== 'banned') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/'
+      return NextResponse.redirect(url)
+    }
 
     const isCompleted = dbUser?.is_profile_completed ?? false
 

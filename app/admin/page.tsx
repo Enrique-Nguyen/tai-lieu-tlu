@@ -56,10 +56,10 @@ export default async function AdminPage() {
     .select('id, code, name, faculty')
     .order('code', { ascending: true });
 
-  // 4. Fetch users (for Admin role management)
+  // 4. Fetch users (for Admin role management and Ban/Unban)
   const { data: usersRaw } = await supabase
     .from('users')
-    .select('id, email, full_name, avatar_url, role, academic_year, major')
+    .select('id, email, full_name, avatar_url, role, status, ban_reason, banned_at, academic_year, major')
     .order('created_at', { ascending: false });
 
   return (
