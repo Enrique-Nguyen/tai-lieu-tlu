@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import { Header } from '@/components/header';
 import { Sidebar } from '@/components/sidebar';
 import { Footer } from '@/components/footer';
+import { NavigationProgress } from '@/components/navigation-progress';
 import { UserProfile } from '@/lib/auth';
 import { X } from 'lucide-react';
 
@@ -17,6 +18,11 @@ export function LayoutShell({ profile, children }: LayoutShellProps) {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans selection:bg-blue-500 selection:text-white">
+      {/* Navigation Progress Bar */}
+      <Suspense fallback={null}>
+        <NavigationProgress />
+      </Suspense>
+
       {/* Global Header */}
       <Header
         profile={profile}
