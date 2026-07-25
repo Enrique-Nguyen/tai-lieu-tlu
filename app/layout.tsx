@@ -41,7 +41,7 @@ export default async function RootLayout({
   const { profile } = await getCurrentUser();
 
   return (
-    <html lang="vi" suppressHydrationWarning>
+    <html lang="vi" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-title" content="Tài liệu TLU" />
       </head>
