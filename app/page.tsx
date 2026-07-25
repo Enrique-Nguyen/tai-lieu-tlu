@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/server';
 import { getCurrentUser } from '@/lib/auth';
+import { getUserBookmarkIds } from '@/app/actions/bookmark';
 import { PostFilter } from '@/components/post-filter';
 import { PostCard, PostItem } from '@/components/post-card';
 import { Pagination } from '@/components/pagination';
 import Link from 'next/link';
 import Image from 'next/image';
-import { BookOpen, Flame, Sparkles, FileText, FileQuestion, Award, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { BookOpen, TrendingUp, FileText, FileQuestion } from 'lucide-react';
 
 const PAGE_SIZE = 3;
 
@@ -41,9 +42,11 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const supabase = await createClient();
 
-  // Fetch current user
+  // Fetch current user & bookmarks
   const { profile } = await getCurrentUser();
   const currentUserId = profile?.id || null;
+  const userBookmarkIds = currentUserId ? await getUserBookmarkIds() : [];
+  const userBookmarkSet = new Set(userBookmarkIds);
 
   // 1. Fetch subjects list for dropdown filter
   const { data: subjectsData } = await supabase
@@ -109,8 +112,12 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   // If sorting by votes count
   if (sort === 'votes' && posts.length > 0) {
     posts = [...posts].sort((a, b) => {
-      const aVotes = (a.votes || []).filter((v) => v.vote_type === 'up').length;
-      const bVotes = (b.votes || []).filter((v) => v.vote_type === 'up').length;
+      const aVotes = (a.votes || []).filter(
+        (v) => (v.vote_type as any) === 1 || v.vote_type === 'up' || (v.vote_type as any) === '1'
+      ).length;
+      const bVotes = (b.votes || []).filter(
+        (v) => (v.vote_type as any) === 1 || v.vote_type === 'up' || (v.vote_type as any) === '1'
+      ).length;
       return bVotes - aVotes;
     });
   }
@@ -118,78 +125,75 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const totalPages = Math.ceil((count || 0) / PAGE_SIZE);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      
-      {/* Antigravity Glass Hero Welcome Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 p-6 sm:p-10 text-white overflow-hidden shadow-2xl border border-white/10">
-        
-        {/* Spatial depth ambient lighting */}
-        <div className="absolute -right-16 -top-16 w-80 h-80 bg-sky-400/25 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute right-1/3 -bottom-20 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+    <div className="space-y-6 animate-in fade-in duration-300">
 
-        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          
+      {/* Hero Banner */}
+      <div className="relative rounded-2xl bg-blue-600 p-6 sm:p-8 text-white overflow-hidden">
+
+        {/* Subtle ambient */}
+        <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/30 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/4" />
+
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+
           <div className="lg:col-span-8 space-y-4">
-            <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 bg-white/15 backdrop-blur-xl rounded-full text-xs font-extrabold text-sky-200 border border-white/25 shadow-xs">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+            <div className="inline-flex items-center space-x-2 px-3 py-1 bg-white/15 rounded-full text-xs font-semibold text-blue-100 border border-white/20">
               <span>Góc Học Tập Sinh Viên Đại Học Thủy Lợi (TLU)</span>
             </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-              Kho Tài Liệu Học Tập <br className="hidden sm:inline" />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-300 via-blue-200 to-amber-200">
-                Chính Thức Sinh Viên TLU
-              </span>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">
+              Kho Tài Liệu Học Tập
+              <br className="hidden sm:inline" />
+              <span className="text-blue-200">Sinh Viên TLU</span>
             </h1>
 
-            <p className="text-blue-100 text-xs sm:text-sm leading-relaxed max-w-2xl font-normal">
-              Tra cứu nhanh đề thi, slide bài giảng, giáo trình và bài tập lớn được đóng góp & duyệt chất lượng bởi cộng đồng sinh viên Trường Đại học Thủy lợi.
+            <p className="text-blue-100 text-sm leading-relaxed max-w-xl">
+              Tra cứu đề thi, slide bài giảng, giáo trình và bài tập lớn được đóng góp bởi cộng đồng sinh viên Trường Đại học Thủy lợi.
             </p>
 
-            <div className="pt-2 flex flex-wrap items-center gap-3">
+            <div className="pt-1 flex flex-wrap items-center gap-3">
               <Link
                 href="/upload"
-                className="px-5 py-2.5 bg-white text-blue-800 hover:bg-blue-50 font-bold text-xs sm:text-sm rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 hover:-translate-y-0.5 inline-flex items-center space-x-2 active:scale-95"
+                className="px-5 py-2.5 bg-white text-blue-700 hover:bg-blue-50 font-semibold text-sm rounded-lg transition-colors inline-flex items-center space-x-2"
               >
-                <FileText className="w-4 h-4 text-blue-600" />
-                <span>Đóng góp tài liệu ngay</span>
+                <FileText className="w-4 h-4" />
+                <span>Đóng góp tài liệu</span>
               </Link>
 
               <Link
                 href="/?sort=votes"
-                className="px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-xl text-white font-bold text-xs sm:text-sm rounded-2xl transition-all duration-200 border border-white/20 inline-flex items-center space-x-2 active:scale-95"
+                className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-sm rounded-lg transition-colors border border-white/20 inline-flex items-center space-x-2"
               >
-                <Flame className="w-4 h-4 text-amber-300" />
-                <span>Tài liệu Nổi Bật</span>
+                <TrendingUp className="w-4 h-4" />
+                <span>Tài liệu nổi bật</span>
               </Link>
             </div>
           </div>
 
-          {/* Right Floating TLU Branding Card */}
+          {/* Right Branding Card */}
           <div className="lg:col-span-4 hidden lg:flex flex-col items-center justify-center">
-            <div className="relative p-6 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl flex flex-col items-center text-center space-y-4 hover:scale-105 transition-transform duration-300">
-              <div className="w-24 h-24 rounded-2xl bg-white p-2.5 shadow-md flex items-center justify-center">
+            <div className="p-5 rounded-xl bg-white/10 border border-white/15 flex flex-col items-center text-center space-y-3 hover:bg-white/15 transition-colors">
+              <div className="w-20 h-20 rounded-xl bg-white p-2 flex items-center justify-center">
                 <Image
                   src="/Logo-DH-Thuy-Loi.webp"
                   alt="Logo Trường Đại Học Thủy Lợi"
-                  width={80}
-                  height={80}
+                  width={72}
+                  height={72}
                   className="w-full h-full object-contain"
                   priority
                 />
               </div>
-              <div className="space-y-1">
-                <h3 className="font-black text-sm tracking-tight text-white">ĐẠI HỌC THỦY LỢI</h3>
-                <p className="text-[11px] text-blue-200">Thuyloi University Student Hub</p>
+              <div className="space-y-0.5">
+                <h3 className="font-bold text-sm text-white">ĐẠI HỌC THỦY LỢI</h3>
+                <p className="text-xs text-blue-200">Thuyloi University Student Hub</p>
               </div>
-              <div className="w-full grid grid-cols-2 gap-2 pt-2 border-t border-white/15 text-[11px]">
-                <div className="bg-white/10 p-2 rounded-xl text-center">
-                  <p className="font-extrabold text-amber-300">{count || 0}+</p>
-                  <p className="text-[10px] text-blue-200">Tài liệu</p>
+              <div className="w-full grid grid-cols-2 gap-2 pt-2 border-t border-white/15 text-xs">
+                <div className="bg-white/10 p-2 rounded-lg text-center">
+                  <p className="font-bold text-white">{count || 0}+</p>
+                  <p className="text-blue-200 text-[10px]">Tài liệu</p>
                 </div>
-                <div className="bg-white/10 p-2 rounded-xl text-center">
-                  <p className="font-extrabold text-sky-300">10 Khoa</p>
-                  <p className="text-[10px] text-blue-200">Đào tạo</p>
+                <div className="bg-white/10 p-2 rounded-lg text-center">
+                  <p className="font-bold text-white">10 Khoa</p>
+                  <p className="text-blue-200 text-[10px]">Đào tạo</p>
                 </div>
               </div>
             </div>
@@ -202,48 +206,53 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <PostFilter subjects={subjects} />
 
       {/* Posts Feed */}
-      <div className="space-y-5">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
-            <BookOpen className="w-5 h-5 text-blue-600 dark:text-sky-400" />
-            <span>Danh sách Bài viết & Tài liệu ({count || 0})</span>
+          <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-blue-600" />
+            <span>Danh sách tài liệu ({count || 0})</span>
           </h2>
-          
+
           {sort === 'votes' && (
-            <span className="inline-flex items-center space-x-1 px-3 py-1 bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 rounded-full text-xs font-bold border border-amber-300/50">
-              <Flame className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-              <span>Sắp xếp theo Bình chọn HOT</span>
+            <span className="inline-flex items-center space-x-1 px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium border border-blue-200 dark:border-blue-800">
+              <TrendingUp className="w-3.5 h-3.5" />
+              <span>Sắp xếp theo bình chọn</span>
             </span>
           )}
         </div>
 
         {posts.length > 0 ? (
-          <div className="grid grid-cols-1 gap-5">
+          <div className="grid grid-cols-1 gap-4">
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} currentUserId={currentUserId} />
+              <PostCard
+                key={post.id}
+                post={post}
+                currentUserId={currentUserId}
+                isBookmarked={userBookmarkSet.has(post.id)}
+              />
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 px-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl border border-dashed border-slate-300 dark:border-slate-800 shadow-xs">
-            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-sky-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100 dark:border-blue-900">
-              <FileQuestion className="w-8 h-8" />
+          <div className="text-center py-14 px-4 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-300 dark:border-slate-800">
+            <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <FileQuestion className="w-7 h-7" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1">
-              Chưa tìm thấy tài liệu phù hợp!
+            <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-1">
+              Chưa tìm thấy tài liệu phù hợp
             </h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6">
-              Không có tài liệu trùng khớp với từ khóa hoặc bộ lọc của bạn. Bạn có đề thi hay slide môn này? Hãy đăng tải để giúp đỡ cộng đồng nhé!
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-5">
+              Không có tài liệu trùng khớp với từ khóa hoặc bộ lọc của bạn.
             </p>
             <div className="flex items-center justify-center gap-3">
               <Link
                 href="/upload"
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-colors"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors"
               >
                 Đăng tài liệu mới
               </Link>
               <Link
                 href="/"
-                className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg font-medium text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               >
                 Xem tất cả
               </Link>
@@ -258,4 +267,3 @@ export default async function HomePage({ searchParams }: HomePageProps) {
     </div>
   );
 }
-

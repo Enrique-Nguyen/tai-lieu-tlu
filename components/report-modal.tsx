@@ -93,13 +93,13 @@ export function ReportModal({ postId, currentUserId }: ReportModalProps) {
           />
 
           {/* Dialog Container */}
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 z-10 animate-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 p-6 z-10 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-4">
               <div className="flex items-center space-x-2.5 text-red-600 dark:text-red-400">
                 <div className="p-2 bg-red-50 dark:bg-red-950/50 rounded-xl">
                   <AlertTriangle className="w-5 h-5" />
                 </div>
-                <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100">
+                <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100">
                   Báo cáo tài liệu vi phạm
                 </h3>
               </div>
@@ -113,7 +113,7 @@ export function ReportModal({ postId, currentUserId }: ReportModalProps) {
 
             {success ? (
               <div className="py-8 text-center space-y-3">
-                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto animate-bounce" />
+                <CheckCircle2 className="w-12 h-12 text-blue-500 mx-auto" />
                 <h4 className="font-bold text-slate-900 dark:text-slate-100 text-lg">
                   Cảm ơn phản hồi của bạn!
                 </h4>
@@ -189,14 +189,14 @@ export function ReportModal({ postId, currentUserId }: ReportModalProps) {
                   <button
                     type="button"
                     onClick={() => setIsOpen(false)}
-                    className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-medium text-xs transition-colors cursor-pointer"
                   >
                     Hủy bỏ
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-xl font-bold text-xs transition-colors shadow-sm disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 active:bg-red-800 text-white rounded-lg font-semibold text-xs transition-colors disabled:opacity-50 cursor-pointer flex items-center space-x-1.5"
                   >
                     {loading && (
                       <div className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />

@@ -18,6 +18,9 @@ export async function voteAction(postId: string, voteType: 'up' | 'down') {
       };
     }
 
+    // Map 'up' -> 1, 'down' -> -1 for Postgres integer column compatibility
+    const voteValue = voteType === 'up' ? 1 : -1;
+
     // Check existing vote
     const { data: existingVote } = await supabase
       .from('votes')
@@ -27,7 +30,14 @@ export async function voteAction(postId: string, voteType: 'up' | 'down') {
       .maybeSingle();
 
     if (existingVote) {
-      if (existingVote.vote_type === voteType) {
+      const existingValue =
+        (existingVote.vote_type as any) === 1 ||
+        existingVote.vote_type === 'up' ||
+        (existingVote.vote_type as any) === '1'
+          ? 1
+          : -1;
+
+      if (existingValue === voteValue) {
         // Remove vote if clicked same type (toggle off)
         const { error: deleteError } = await supabase
           .from('votes')
@@ -40,10 +50,10 @@ export async function voteAction(postId: string, voteType: 'up' | 'down') {
         revalidatePath('/');
         return { success: true, action: 'removed', voteType };
       } else {
-        // Update vote to new type
+        // Update vote to new type (integer 1 or -1)
         const { error: updateError } = await supabase
           .from('votes')
-          .update({ vote_type: voteType })
+          .update({ vote_type: voteValue })
           .eq('user_id', user.id)
           .eq('post_id', postId);
 
@@ -53,11 +63,11 @@ export async function voteAction(postId: string, voteType: 'up' | 'down') {
         return { success: true, action: 'updated', voteType };
       }
     } else {
-      // Insert new vote
+      // Insert new vote (integer 1 or -1)
       const { error: insertError } = await supabase.from('votes').insert({
         user_id: user.id,
         post_id: postId,
-        vote_type: voteType,
+        vote_type: voteValue,
       });
 
       if (insertError) throw insertError;

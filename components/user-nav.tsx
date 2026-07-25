@@ -11,7 +11,7 @@ import {
   ShieldAlert,
   LogOut,
   ChevronDown,
-  Sparkles,
+  Bookmark,
 } from 'lucide-react';
 
 interface UserNavProps {
@@ -23,7 +23,6 @@ export function UserNav({ profile }: UserNavProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -46,7 +45,7 @@ export function UserNav({ profile }: UserNavProps) {
     return (
       <Link
         href="/login"
-        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium text-sm transition-colors shadow-sm"
+        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors"
       >
         Đăng nhập
       </Link>
@@ -60,20 +59,13 @@ export function UserNav({ profile }: UserNavProps) {
       ? 'Kiểm duyệt viên'
       : 'Sinh viên';
 
-  const roleBadgeStyle =
-    profile.role === 'admin'
-      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300'
-      : profile.role === 'moderator'
-      ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
-      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300';
-
   return (
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2.5 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer focus:outline-none"
+        className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer focus:outline-none"
       >
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
+        <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-sm overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
           {profile.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -86,10 +78,10 @@ export function UserNav({ profile }: UserNavProps) {
           )}
         </div>
         <div className="hidden md:flex flex-col text-left">
-          <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 max-w-[120px] truncate">
+          <span className="text-sm font-medium text-slate-800 dark:text-slate-200 max-w-[120px] truncate">
             {profile.full_name || 'Sinh viên'}
           </span>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 capitalize">
+          <span className="text-[11px] text-slate-400 dark:text-slate-500">
             {roleLabel}
           </span>
         </div>
@@ -97,19 +89,16 @@ export function UserNav({ profile }: UserNavProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute right-0 mt-2 w-60 bg-white dark:bg-slate-900 rounded-xl shadow-lg border border-slate-200 dark:border-slate-800 py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
           {/* User Info Header */}
-          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-            <p className="text-sm font-bold text-slate-900 dark:text-slate-100 truncate">
+          <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
               {profile.full_name || 'Sinh viên'}
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 truncate mb-2">
+            <p className="text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
               {profile.email}
             </p>
-            <span
-              className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${roleBadgeStyle}`}
-            >
-              {profile.role === 'admin' && <Sparkles className="w-3 h-3 mr-1" />}
+            <span className="inline-flex items-center mt-1.5 px-2 py-0.5 rounded text-[11px] font-medium bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
               {roleLabel}
             </span>
           </div>
@@ -126,6 +115,15 @@ export function UserNav({ profile }: UserNavProps) {
             </Link>
 
             <Link
+              href="/saved"
+              onClick={() => setIsOpen(false)}
+              className="flex items-center space-x-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+            >
+              <Bookmark className="w-4 h-4 text-blue-500" />
+              <span>Tài liệu đã lưu</span>
+            </Link>
+
+            <Link
               href="/my-posts"
               onClick={() => setIsOpen(false)}
               className="flex items-center space-x-2.5 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
@@ -134,13 +132,13 @@ export function UserNav({ profile }: UserNavProps) {
               <span>Tài liệu của tôi</span>
             </Link>
 
-            {profile.role === 'admin' && (
+            {(profile.role === 'admin' || profile.role === 'moderator') && (
               <Link
                 href="/admin"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center space-x-2.5 px-4 py-2 text-sm text-purple-600 dark:text-purple-400 font-semibold hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors"
+                className="flex items-center space-x-2.5 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 font-medium hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors"
               >
-                <ShieldAlert className="w-4 h-4 text-purple-500" />
+                <ShieldAlert className="w-4 h-4" />
                 <span>Admin Dashboard</span>
               </Link>
             )}
@@ -151,7 +149,7 @@ export function UserNav({ profile }: UserNavProps) {
               onClick={handleSignOut}
               className="w-full flex items-center space-x-2.5 px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
             >
-              <LogOut className="w-4 h-4 text-red-500" />
+              <LogOut className="w-4 h-4" />
               <span>Đăng xuất</span>
             </button>
           </div>

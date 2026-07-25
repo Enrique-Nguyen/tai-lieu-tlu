@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/server';
 import { getCurrentUser } from '@/lib/auth';
+import { getUserBookmarkIds } from '@/app/actions/bookmark';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { PostCard, PostItem } from '@/components/post-card';
@@ -73,6 +74,10 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
     notFound();
   }
 
+  // Fetch bookmark status for current user
+  const userBookmarkIds = currentUserId ? await getUserBookmarkIds() : [];
+  const isBookmarked = userBookmarkIds.includes(post.id);
+
   // Fetch comments for this post
   const { data: commentsRaw } = await supabase
     .from('comments')
@@ -137,7 +142,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
       </div>
 
       {/* Main Post Header Card */}
-      <PostCard post={post} currentUserId={currentUserId} />
+      <PostCard post={post} currentUserId={currentUserId} isBookmarked={isBookmarked} />
 
       {/* Report Button Row */}
       <div className="flex justify-end">

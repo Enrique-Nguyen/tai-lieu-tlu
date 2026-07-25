@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createPostAction } from "@/app/actions/post";
 import { FACULTIES_DATA } from "@/lib/constants";
@@ -14,6 +14,10 @@ import {
   Info,
   ArrowLeft,
   GraduationCap,
+  Search,
+  X,
+  PlusCircle,
+  Check,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -39,15 +43,41 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 export function PostCreateForm({ subjects }: PostCreateFormProps) {
   const router = useRouter();
 
-  // Subject Toggle State
+  // Subject Toggle & Real-time Search State
   const [isNewSubject, setIsNewSubject] = useState(false);
   const [selectedSubjectId, setSelectedSubjectId] = useState("");
+  const [subjectSearch, setSubjectSearch] = useState("");
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
+  const subjectRef = useRef<HTMLDivElement>(null);
+
   const [newSubjectCode, setNewSubjectCode] = useState("");
   const [newSubjectName, setNewSubjectName] = useState("");
   const [selectedFacultyIndex, setSelectedFacultyIndex] = useState<number>(0);
   const [selectedDepartment, setSelectedDepartment] = useState<string>(
     FACULTIES_DATA[0]?.departments[0] || "",
   );
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        subjectRef.current &&
+        !subjectRef.current.contains(event.target as Node)
+      ) {
+        setIsSubjectDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredSubjects = subjects.filter((sub) => {
+    const term = subjectSearch.trim().toLowerCase();
+    if (!term) return true;
+    return (
+      sub.code.toLowerCase().includes(term) ||
+      sub.name.toLowerCase().includes(term)
+    );
+  });
 
   // File / Link Attachment State
   const [attachMode, setAttachMode] = useState<"file" | "link">("file");
@@ -102,6 +132,12 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
         selectedDepartment || currentFaculty.departments[0] || "",
       );
     } else {
+      if (!selectedSubjectId) {
+        setServerError(
+          "Vui lòng tìm và chọn Môn học từ danh sách hoặc thêm môn học mới.",
+        );
+        return;
+      }
       formData.set("subjectId", selectedSubjectId);
     }
 
@@ -233,20 +269,85 @@ export function PostCreateForm({ subjects }: PostCreateFormProps) {
               </div>
 
               {!isNewSubject ? (
-                /* Default Mode: Existing Subject Select */
-                <select
-                  value={selectedSubjectId}
-                  onChange={(e) => setSelectedSubjectId(e.target.value)}
-                  required={!isNewSubject}
-                  className="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors"
-                >
-                  <option value="">-- Chọn Môn học từ danh sách --</option>
-                  {subjects.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      [{sub.code}] {sub.name}
-                    </option>
-                  ))}
-                </select>
+                /* Mode A: Real-Time Search & Suggestion Combobox */
+                <div className="relative" ref={subjectRef}>
+                  <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Tìm môn học theo tên hoặc mã môn (ví dụ: CSE301, Toán cao cấp)..."
+                      value={subjectSearch}
+                      onChange={(e) => {
+                        setSubjectSearch(e.target.value);
+                        setSelectedSubjectId("");
+                        setIsSubjectDropdownOpen(true);
+                      }}
+                      onFocus={() => setIsSubjectDropdownOpen(true)}
+                      className="w-full pl-10 pr-10 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-xl outline-none focus:border-blue-500 transition-colors"
+                    />
+                    {subjectSearch && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubjectSearch("");
+                          setSelectedSubjectId("");
+                          setIsSubjectDropdownOpen(true);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Dropdown Suggestions */}
+                  {isSubjectDropdownOpen && (
+                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg z-30 max-h-60 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in duration-150">
+                      {filteredSubjects.length > 0 ? (
+                        filteredSubjects.map((sub) => {
+                          const isSelected = selectedSubjectId === sub.id;
+                          return (
+                            <div
+                              key={sub.id}
+                              onClick={() => {
+                                setSelectedSubjectId(sub.id);
+                                setSubjectSearch(`[${sub.code}] ${sub.name}`);
+                                setIsSubjectDropdownOpen(false);
+                              }}
+                              className={`px-4 py-2.5 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer text-sm flex items-center justify-between transition-colors ${
+                                isSelected
+                                  ? "bg-blue-50 dark:bg-blue-950/60 font-semibold text-blue-600 dark:text-blue-400"
+                                  : "text-slate-800 dark:text-slate-200"
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2 truncate">
+                                <span className="font-bold text-blue-600 dark:text-blue-400 text-xs shrink-0">
+                                  [{sub.code}]
+                                </span>
+                                <span className="truncate">{sub.name}</span>
+                              </div>
+                              {isSelected && (
+                                <Check className="w-4 h-4 text-blue-600 shrink-0 ml-2" />
+                              )}
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div
+                          onClick={() => {
+                            setIsNewSubject(true);
+                            setNewSubjectName(subjectSearch);
+                            setIsSubjectDropdownOpen(false);
+                          }}
+                          className="p-3.5 text-center text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/60 cursor-pointer flex items-center justify-center space-x-1.5 transition-colors"
+                        >
+                          <PlusCircle className="w-4 h-4 text-blue-500 shrink-0" />
+                          <span>Không có môn phù hợp, hãy thêm môn học mới</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
                 /* Toggle Mode: Create New Subject Form */
                 <div className="space-y-4 pt-2 animate-in fade-in duration-200 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-blue-200 dark:border-blue-900/60">

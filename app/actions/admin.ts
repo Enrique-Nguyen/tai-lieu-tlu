@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/server';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { revalidatePath } from 'next/cache';
 
 /**
@@ -205,6 +206,21 @@ export async function deleteSubjectAction(id: string) {
   }
 }
 
+function createAdminClient() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!serviceRoleKey) return null;
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    serviceRoleKey,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    }
+  );
+}
+
 /**
  * 6. Update User Role (Admin Only)
  */
@@ -229,13 +245,35 @@ export async function updateUserRoleAction({
       };
     }
 
-    const supabase = await createClient();
-    const { error } = await supabase
-      .from('users')
-      .update({ role: newRole })
-      .eq('id', targetUserId);
+    // Attempt update using Service Role Client if available (bypasses RLS)
+    const adminClient = createAdminClient();
 
-    if (error) throw error;
+    if (adminClient) {
+      const { error: adminErr } = await adminClient
+        .from('users')
+        .update({ role: newRole })
+        .eq('id', targetUserId);
+
+      if (adminErr) throw adminErr;
+    } else {
+      // Standard authenticated client
+      const supabase = await createClient();
+      const { data, error } = await supabase
+        .from('users')
+        .update({ role: newRole })
+        .eq('id', targetUserId)
+        .select();
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        return {
+          success: false,
+          error:
+            'Chưa thể cập nhật quyền trong DB (RLS policy từ chối). Vui lòng thêm RLS Policy cho Admin trên Supabase hoặc khai báo SUPABASE_SERVICE_ROLE_KEY trong .env.local.',
+        };
+      }
+    }
 
     revalidatePath('/admin');
     return { success: true };

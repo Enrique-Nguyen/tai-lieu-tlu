@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { Header } from '@/components/header';
 import { Sidebar } from '@/components/sidebar';
 import { Footer } from '@/components/footer';
@@ -27,7 +27,9 @@ export function LayoutShell({ profile, children }: LayoutShellProps) {
       <div className="flex-1 max-w-7xl w-full mx-auto flex">
         {/* Desktop Sidebar */}
         <div className="hidden lg:block">
-          <Sidebar />
+          <Suspense fallback={null}>
+            <Sidebar />
+          </Suspense>
         </div>
 
         {/* Mobile Drawer Overlay */}
@@ -54,7 +56,9 @@ export function LayoutShell({ profile, children }: LayoutShellProps) {
               </div>
 
               <div className="flex-1 overflow-y-auto">
-                <Sidebar onCloseMobile={() => setMobileSidebarOpen(false)} />
+                <Suspense fallback={null}>
+                  <Sidebar onCloseMobile={() => setMobileSidebarOpen(false)} />
+                </Suspense>
               </div>
             </div>
           </div>

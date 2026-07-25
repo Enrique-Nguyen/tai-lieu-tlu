@@ -19,6 +19,8 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
     fileUrl.toLowerCase().includes('.rar') ||
     fileUrl.toLowerCase().includes('.7z');
 
+  const downloadUrl = `/api/download?url=${encodeURIComponent(fileUrl)}&title=${encodeURIComponent(title)}`;
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
       
@@ -50,9 +52,8 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
           )}
 
           <a
-            href={fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={downloadUrl}
+            download
             className="inline-flex items-center space-x-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
@@ -97,9 +98,8 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
             </p>
           </div>
           <a
-            href={fileUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={downloadUrl}
+            download
             className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md"
           >
             <Download className="w-4 h-4" />

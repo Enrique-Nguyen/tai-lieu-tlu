@@ -98,14 +98,14 @@ export function CommentSection({
     return (
       <div
         key={comment.id}
-        className={`p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 space-y-3 transition-colors ${
+        className={`p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 transition-colors ${
           isReply ? 'ml-4 sm:ml-8 border-l-2 border-l-blue-500' : ''
         }`}
       >
         {/* Comment Header */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
+            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
               {comment.author?.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -125,7 +125,7 @@ export function CommentSection({
                 </span>
 
                 {comment.author?.role === 'admin' && (
-                  <span className="px-1.5 py-0.5 bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 font-extrabold text-[10px] rounded-md inline-flex items-center">
+                  <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold text-[10px] rounded-md inline-flex items-center">
                     <Shield className="w-2.5 h-2.5 mr-0.5" /> Admin
                   </span>
                 )}
@@ -212,11 +212,11 @@ export function CommentSection({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 shadow-sm space-y-6">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 sm:p-6 space-y-6">
       
       {/* Title */}
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-        <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100 flex items-center gap-2">
+        <h3 className="font-bold text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
           <MessageSquare className="w-5 h-5 text-blue-600 dark:text-blue-400" />
           <span>Bình luận & Thảo luận ({comments.length})</span>
         </h3>
@@ -236,13 +236,13 @@ export function CommentSection({
             placeholder="Viết bình luận hoặc câu hỏi của bạn về tài liệu này..."
             value={mainContent}
             onChange={(e) => setMainContent(e.target.value)}
-            className="w-full p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-2xl outline-none focus:border-blue-500 transition-colors placeholder:text-slate-400"
+            className="w-full p-4 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-lg outline-none focus:border-blue-500 transition-colors placeholder:text-slate-400"
           />
           <div className="flex justify-end">
             <button
               onClick={() => handleAddComment(null)}
               disabled={isPending || !mainContent.trim()}
-              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-bold text-xs sm:text-sm shadow-sm transition-all duration-200 disabled:opacity-50 cursor-pointer flex items-center space-x-2"
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg font-semibold text-xs sm:text-sm transition-colors disabled:opacity-50 cursor-pointer flex items-center space-x-2"
             >
               <Send className="w-4 h-4" />
               <span>{isPending ? 'Đang gửi...' : 'Đăng bình luận'}</span>
@@ -250,7 +250,7 @@ export function CommentSection({
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-blue-50/60 dark:bg-blue-950/40 rounded-2xl border border-blue-100 dark:border-blue-900/50 text-center space-y-2">
+        <div className="p-4 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-100 dark:border-blue-900/50 text-center space-y-2">
           <p className="text-xs text-blue-900 dark:text-blue-200 font-medium">
             Bạn cần đăng nhập để tham gia thảo luận và gửi bình luận.
           </p>

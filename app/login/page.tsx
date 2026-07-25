@@ -9,7 +9,7 @@ import {
   ShieldCheck,
   FileText,
   AlertCircle,
-  Sparkles,
+  Star,
 } from "lucide-react";
 
 function LoginForm() {
@@ -85,7 +85,7 @@ function LoginForm() {
           <button
             onClick={() => handleOAuthLogin("azure")}
             disabled={loadingProvider !== null}
-            className="w-full py-3.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-semibold text-sm shadow-md transition-all duration-200 flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer group hover:shadow-lg"
+            className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-xl font-semibold text-sm shadow-sm transition-colors flex items-center justify-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             {loadingProvider === "azure" ? (
               <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -104,9 +104,8 @@ function LoginForm() {
                 : "Đăng nhập bằng Email Trường (Microsoft)"}
             </span>
           </button>
-          <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-amber-400 text-slate-950 font-extrabold text-[10px] uppercase tracking-wider rounded-full shadow-sm flex items-center gap-1">
-            <Sparkles className="w-3 h-3 fill-slate-950" /> Khuyên dùng cho Sinh
-            viên
+          <span className="absolute -top-2.5 right-3 px-2 py-0.5 bg-blue-50 text-blue-700 font-bold text-[10px] uppercase tracking-wider rounded-full border border-blue-200 flex items-center gap-1">
+            <Star className="w-3 h-3 fill-blue-600 text-blue-600" /> Khuyên dùng cho Sinh viên
           </span>
         </div>
 
@@ -168,12 +167,12 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-50 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
       <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 bg-white dark:bg-slate-900 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-800">
         {/* Left Side: Branding & Value Props */}
-        <div className="p-8 md:p-10 bg-gradient-to-br from-blue-700 via-blue-800 to-indigo-900 text-white flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-sky-400/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="p-8 md:p-10 bg-blue-600 text-white flex flex-col justify-between relative overflow-hidden">
+          <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/30 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-12 -left-12 w-48 h-48 bg-blue-700/20 rounded-full blur-3xl pointer-events-none" />
 
           <div>
             <div className="flex items-center space-x-3 mb-6">
@@ -187,7 +186,7 @@ export default function LoginPage() {
                 />
               </div>
               <div className="flex flex-col">
-                <span className="font-black text-xl tracking-tight text-white">
+                <span className="font-bold text-xl tracking-tight text-white">
                   TLU Tài Liệu
                 </span>
                 <span className="text-xs text-blue-200 font-semibold">
@@ -196,7 +195,7 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-black leading-tight mb-4">
+            <h1 className="text-2xl md:text-3xl font-bold leading-tight mb-4">
               Cộng đồng Chia sẻ Tài liệu Sinh viên TLU
             </h1>
             <p className="text-blue-100 text-sm leading-relaxed mb-8">
@@ -207,18 +206,18 @@ export default function LoginPage() {
 
           <div className="space-y-4">
             <div className="flex items-center space-x-3 text-sm text-blue-50">
-              <BookOpen className="w-5 h-5 text-sky-300 shrink-0" />
+              <BookOpen className="w-5 h-5 text-blue-200 shrink-0" />
               <span>
                 Đăng nhập trực tiếp bằng tài khoản Microsoft Office 365 nhà
                 trường
               </span>
             </div>
             <div className="flex items-center space-x-3 text-sm text-blue-50">
-              <FileText className="w-5 h-5 text-sky-300 shrink-0" />
+              <FileText className="w-5 h-5 text-blue-200 shrink-0" />
               <span>Đề thi & Đáp án cập nhật theo từng học kỳ</span>
             </div>
             <div className="flex items-center space-x-3 text-sm text-blue-50">
-              <ShieldCheck className="w-5 h-5 text-sky-300 shrink-0" />
+              <ShieldCheck className="w-5 h-5 text-blue-200 shrink-0" />
               <span>Xác thực tài khoản an toàn & Bảo mật</span>
             </div>
           </div>

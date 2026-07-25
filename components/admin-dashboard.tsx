@@ -24,8 +24,6 @@ import {
   Search,
   ExternalLink,
   Download,
-  Calendar,
-  Sparkles,
 } from 'lucide-react';
 
 interface PendingPost {
@@ -84,7 +82,6 @@ export function AdminDashboard({
   const [activeTab, setActiveTab] = useState<'pending' | 'reports' | 'subjects' | 'users'>('pending');
   const [isPending, startTransition] = useTransition();
 
-  // Search filter for Users tab
   const [userSearch, setUserSearch] = useState('');
 
   // Subject Modal State
@@ -176,109 +173,83 @@ export function AdminDashboard({
     });
   };
 
-  // Filtered Users List
   const filteredUsers = usersList.filter(
     (u) =>
       u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
       (u.full_name && u.full_name.toLowerCase().includes(userSearch.toLowerCase()))
   );
 
+  const tabs = [
+    { id: 'pending' as const, label: `Duyệt bài (${pendingPosts.length})`, icon: FileCheck },
+    { id: 'reports' as const, label: `Báo cáo (${reports.length})`, icon: AlertTriangle },
+    ...(isAdmin ? [
+      { id: 'subjects' as const, label: `Môn học (${subjects.length})`, icon: BookOpen },
+      { id: 'users' as const, label: `Người dùng (${usersList.length})`, icon: Users },
+    ] : []),
+  ];
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      
+    <div className="space-y-5 animate-in fade-in duration-300">
+
       {/* Header Banner */}
-      <div className="p-6 sm:p-8 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl text-white shadow-xl flex items-center justify-between flex-wrap gap-4 border border-slate-800">
-        <div className="space-y-2">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 bg-purple-500/20 text-purple-300 rounded-full text-xs font-bold border border-purple-500/30">
+      <div className="p-5 sm:p-6 bg-blue-600 rounded-2xl text-white flex items-center justify-between flex-wrap gap-3">
+        <div className="space-y-1">
+          <div className="inline-flex items-center space-x-2 px-2.5 py-1 bg-white/15 text-blue-100 rounded-md text-xs font-medium border border-white/20">
             <Shield className="w-3.5 h-3.5" />
             <span>Trang Quản trị Hệ Thống</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
             Admin & Moderator Dashboard
           </h1>
-          <p className="text-slate-400 text-xs sm:text-sm">
-            Duyệt tài liệu, xử lý báo cáo vi phạm, quản lý danh mục môn học và phân quyền tài khoản sinh viên.
+          <p className="text-blue-100 text-xs sm:text-sm">
+            Duyệt tài liệu, xử lý báo cáo vi phạm, quản lý danh mục môn học và phân quyền tài khoản.
           </p>
         </div>
 
-        <div className="px-4 py-2 bg-slate-800/80 rounded-2xl border border-slate-700 text-xs font-bold text-slate-300">
-          Vai trò của bạn:{' '}
-          <span className={isAdmin ? 'text-purple-400 uppercase font-black' : 'text-amber-400 uppercase font-black'}>
-            {isAdmin ? 'Quản trị viên (Admin)' : 'Kiểm duyệt viên (Moderator)'}
+        <div className="px-3 py-1.5 bg-white/10 rounded-lg border border-white/15 text-xs font-medium text-blue-100">
+          Vai trò:{' '}
+          <span className="text-white font-bold uppercase">
+            {isAdmin ? 'Admin' : 'Moderator'}
           </span>
         </div>
       </div>
 
       {/* Tabs Navigation Bar */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto pb-2 no-scrollbar">
-        <button
-          onClick={() => setActiveTab('pending')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer ${
-            activeTab === 'pending'
-              ? 'bg-blue-600 text-white shadow-md'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <FileCheck className="w-4 h-4" />
-          <span>Duyệt bài viết chờ ({pendingPosts.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('reports')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer ${
-            activeTab === 'reports'
-              ? 'bg-red-600 text-white shadow-md'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-          }`}
-        >
-          <AlertTriangle className="w-4 h-4" />
-          <span>Báo cáo vi phạm ({reports.length})</span>
-        </button>
-
-        {isAdmin && (
-          <button
-            onClick={() => setActiveTab('subjects')}
-            className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer ${
-              activeTab === 'subjects'
-                ? 'bg-emerald-600 text-white shadow-md'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Quản lý Môn học ({subjects.length})</span>
-          </button>
-        )}
-
-        {isAdmin && (
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`flex items-center space-x-2 px-4 py-2.5 rounded-2xl text-xs sm:text-sm font-bold transition-all shrink-0 cursor-pointer ${
-              activeTab === 'users'
-                ? 'bg-purple-600 text-white shadow-md'
-                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Quản lý Người dùng ({usersList.length})</span>
-          </button>
-        )}
+      <div className="flex items-center gap-1.5 border-b border-slate-200 dark:border-slate-800 overflow-x-auto pb-2 no-scrollbar">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors shrink-0 cursor-pointer ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800'
+              }`}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Tab 1: Pending Posts Moderation */}
       {activeTab === 'pending' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {pendingPosts.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-3">
               {pendingPosts.map((post) => (
                 <div
                   key={post.id}
-                  className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4"
+                  className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 space-y-3"
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
                       <div className="flex items-center space-x-2 mb-1">
                         {post.subjects && (
-                          <span className="px-2.5 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-extrabold text-xs rounded-lg">
+                          <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold text-xs rounded-md border border-blue-200 dark:border-blue-800">
                             [{post.subjects.code}] {post.subjects.name}
                           </span>
                         )}
@@ -286,26 +257,25 @@ export function AdminDashboard({
                           Đăng bởi: {post.author?.full_name || post.author?.email || 'Sinh viên'}
                         </span>
                       </div>
-                      <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                      <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100">
                         {post.title}
                       </h3>
                     </div>
 
                     {post.file_url && (
                       <a
-                        href={post.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold rounded-xl text-slate-700 dark:text-slate-300"
+                        href={`/api/download?url=${encodeURIComponent(post.file_url)}&title=${encodeURIComponent(post.title)}`}
+                        download
+                        className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-medium rounded-lg text-slate-700 dark:text-slate-300"
                       >
                         <Download className="w-3.5 h-3.5" />
-                        <span>Xem file</span>
+                        <span>Tải file</span>
                       </a>
                     )}
                   </div>
 
                   {post.description && (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-2xl">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
                       {post.description}
                     </p>
                   )}
@@ -314,7 +284,7 @@ export function AdminDashboard({
                     <button
                       onClick={() => handleModerate(post.id, 'rejected')}
                       disabled={isPending}
-                      className="px-4 py-2 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1"
+                      className="px-4 py-2 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1"
                     >
                       <X className="w-4 h-4" />
                       <span>Từ chối</span>
@@ -323,18 +293,18 @@ export function AdminDashboard({
                     <button
                       onClick={() => handleModerate(post.id, 'approved')}
                       disabled={isPending}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1 shadow-sm"
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1"
                     >
                       <Check className="w-4 h-4" />
-                      <span>Chấp nhận Duyệt</span>
+                      <span>Phê duyệt</span>
                     </button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-500 text-sm">
-              🎉 Không có bài viết nào đang chờ duyệt!
+            <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-500 text-sm">
+              Không có bài viết nào đang chờ duyệt!
             </div>
           )}
         </div>
@@ -342,22 +312,22 @@ export function AdminDashboard({
 
       {/* Tab 2: Reports Management */}
       {activeTab === 'reports' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {reports.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-1 gap-3">
               {reports.map((rep) => (
                 <div
                   key={rep.id}
-                  className="bg-white dark:bg-slate-900 rounded-3xl border border-red-100 dark:border-red-950 p-5 shadow-sm space-y-3"
+                  className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 space-y-3"
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="space-y-1">
-                      <div className="flex items-center space-x-2 text-xs text-red-600 dark:text-red-400 font-bold">
+                      <div className="flex items-center space-x-2 text-xs text-red-600 dark:text-red-400 font-medium">
                         <AlertTriangle className="w-4 h-4 shrink-0" />
-                        <span>Báo cáo vi phạm bởi: {rep.reporter?.full_name || rep.reporter?.email || 'Nặc danh'}</span>
+                        <span>Báo cáo bởi: {rep.reporter?.full_name || rep.reporter?.email || 'Nặc danh'}</span>
                       </div>
-                      <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                        Bài viết bị báo cáo: {rep.posts?.title || 'Bài viết không tồn tại / đã bị xóa'}
+                      <h4 className="font-semibold text-sm text-slate-900 dark:text-slate-100">
+                        Bài viết: {rep.posts?.title || 'Bài viết không tồn tại / đã bị xóa'}
                       </h4>
                     </div>
 
@@ -365,7 +335,7 @@ export function AdminDashboard({
                       <Link
                         href={`/post/${rep.posts.id}`}
                         target="_blank"
-                        className="inline-flex items-center space-x-1 text-xs font-semibold text-blue-600 hover:underline"
+                        className="inline-flex items-center space-x-1 text-xs font-medium text-blue-600 hover:underline"
                       >
                         <span>Xem bài viết</span>
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -373,7 +343,7 @@ export function AdminDashboard({
                     )}
                   </div>
 
-                  <div className="p-3 bg-red-50/60 dark:bg-red-950/40 rounded-2xl border border-red-100 dark:border-red-900/50 text-xs text-red-800 dark:text-red-300 font-medium">
+                  <div className="p-3 bg-red-50 dark:bg-red-950/30 rounded-lg border border-red-100 dark:border-red-900/50 text-xs text-red-800 dark:text-red-300">
                     <strong>Lý do báo cáo:</strong> {rep.reason}
                   </div>
 
@@ -381,19 +351,19 @@ export function AdminDashboard({
                     <button
                       onClick={() => handleReport(rep.id, rep.posts?.id, 'dismiss')}
                       disabled={isPending}
-                      className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                      className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition-colors cursor-pointer"
                     >
-                      Bỏ qua báo cáo
+                      Bỏ qua
                     </button>
 
                     {rep.posts?.id && (
                       <button
                         onClick={() => handleReport(rep.id, rep.posts?.id, 'delete_post')}
                         disabled={isPending}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shadow-sm flex items-center space-x-1"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center space-x-1"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span>Xóa bài viết vi phạm</span>
+                        <span>Xóa bài viết</span>
                       </button>
                     )}
                   </div>
@@ -401,8 +371,8 @@ export function AdminDashboard({
               ))}
             </div>
           ) : (
-            <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-500 text-sm">
-              ✨ Không có báo cáo vi phạm nào chưa xử lý!
+            <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-500 text-sm">
+              Không có báo cáo vi phạm nào chưa xử lý!
             </div>
           )}
         </div>
@@ -412,22 +382,22 @@ export function AdminDashboard({
       {activeTab === 'subjects' && isAdmin && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100">
+            <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100">
               Danh sách Môn học
             </h3>
             <button
               onClick={() => handleOpenSubjectModal()}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs shadow-sm transition-colors cursor-pointer flex items-center space-x-1.5"
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-xs transition-colors cursor-pointer flex items-center space-x-1.5"
             >
               <Plus className="w-4 h-4" />
-              <span>Thêm Môn Học Mới</span>
+              <span>Thêm Môn học mới</span>
             </button>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-extrabold uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-4">Mã môn</th>
                     <th className="p-4">Tên môn học</th>
@@ -437,15 +407,15 @@ export function AdminDashboard({
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {subjects.map((sub) => (
-                    <tr key={sub.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
-                      <td className="p-4 font-bold text-blue-600 dark:text-blue-400">
+                    <tr key={sub.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                      <td className="p-4 font-medium text-blue-600 dark:text-blue-400">
                         {sub.code}
                       </td>
-                      <td className="p-4 font-semibold text-slate-900 dark:text-slate-100">
+                      <td className="p-4 font-medium text-slate-900 dark:text-slate-100">
                         {sub.name}
                       </td>
                       <td className="p-4 text-slate-500 text-xs">{sub.faculty}</td>
-                      <td className="p-4 text-right space-x-2">
+                      <td className="p-4 text-right space-x-1">
                         <button
                           onClick={() => handleOpenSubjectModal(sub)}
                           className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
@@ -474,11 +444,10 @@ export function AdminDashboard({
       {activeTab === 'users' && isAdmin && (
         <div className="space-y-4">
           <div className="flex justify-between items-center gap-4 flex-wrap">
-            <h3 className="font-extrabold text-base text-slate-900 dark:text-slate-100">
-              Quản lý Phân quyền Người dùng ({filteredUsers.length})
+            <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100">
+              Quản lý Phân quyền ({filteredUsers.length})
             </h3>
 
-            {/* Search User Input */}
             <div className="relative w-full sm:w-72">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
@@ -486,20 +455,20 @@ export function AdminDashboard({
                 placeholder="Tìm theo Tên hoặc Email..."
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none"
+                className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-xs rounded-lg outline-none focus:border-blue-500"
               />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-extrabold uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                <thead className="bg-slate-50 dark:bg-slate-800/60 text-xs font-semibold uppercase text-slate-500 border-b border-slate-200 dark:border-slate-800">
                   <tr>
                     <th className="p-4">Người dùng</th>
                     <th className="p-4">Email</th>
                     <th className="p-4">Khoa / Niên khóa</th>
-                    <th className="p-4">Vai trò (Role)</th>
+                    <th className="p-4">Vai trò</th>
                     <th className="p-4 text-right">Phân quyền</th>
                   </tr>
                 </thead>
@@ -507,10 +476,10 @@ export function AdminDashboard({
                   {filteredUsers.map((u) => {
                     const isSelf = u.id === currentUserId;
                     return (
-                      <tr key={u.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                      <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
                         <td className="p-4">
                           <div className="flex items-center space-x-2.5">
-                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-semibold text-xs overflow-hidden shrink-0">
                               {u.avatar_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img src={u.avatar_url} alt={u.full_name || 'User'} className="w-full h-full object-cover" />
@@ -518,8 +487,9 @@ export function AdminDashboard({
                                 (u.full_name || u.email)[0].toUpperCase()
                               )}
                             </div>
-                            <span className="font-bold text-slate-900 dark:text-slate-100">
-                              {u.full_name || 'Sinh viên'} {isSelf && <span className="text-xs text-blue-500 font-normal">(Bạn)</span>}
+                            <span className="font-medium text-slate-900 dark:text-slate-100">
+                              {u.full_name || 'Sinh viên'}{' '}
+                              {isSelf && <span className="text-xs text-blue-500 font-normal">(Bạn)</span>}
                             </span>
                           </div>
                         </td>
@@ -533,15 +503,7 @@ export function AdminDashboard({
                         </td>
 
                         <td className="p-4">
-                          <span
-                            className={`px-2 py-1 rounded-md text-[11px] font-bold capitalize ${
-                              u.role === 'admin'
-                                ? 'bg-purple-100 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300'
-                                : u.role === 'moderator'
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300'
-                                : 'bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
-                            }`}
-                          >
+                          <span className="px-2 py-1 rounded text-[11px] font-medium bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 capitalize">
                             {u.role}
                           </span>
                         </td>
@@ -553,12 +515,12 @@ export function AdminDashboard({
                             onChange={(e) =>
                               handleRoleChange(u.id, e.target.value as 'student' | 'moderator' | 'admin')
                             }
-                            className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-xl outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                            className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-medium rounded-lg outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                             title={isSelf ? 'Không thể tự đổi quyền của chính mình' : 'Chọn Role'}
                           >
-                            <option value="student">student (Sinh viên)</option>
-                            <option value="moderator">moderator (Kiểm duyệt)</option>
-                            <option value="admin">admin (Quản trị)</option>
+                            <option value="student">student</option>
+                            <option value="moderator">moderator</option>
+                            <option value="admin">admin</option>
                           </select>
                         </td>
                       </tr>
@@ -574,46 +536,46 @@ export function AdminDashboard({
       {/* Subject Add/Edit Modal */}
       {subjectModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSubjectModalOpen(false)} />
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl z-10 space-y-4 border border-slate-200 dark:border-slate-800">
-            <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100">
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setSubjectModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-xl p-6 shadow-xl z-10 space-y-4 border border-slate-200 dark:border-slate-800">
+            <h3 className="font-semibold text-base text-slate-900 dark:text-slate-100">
               {editingSubject ? 'Chỉnh sửa Môn học' : 'Thêm Môn học Mới'}
             </h3>
 
             <form onSubmit={handleSaveSubject} className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase">Mã môn học</label>
+                <label className="text-xs font-medium text-slate-500 uppercase">Mã môn học</label>
                 <input
                   type="text"
                   required
                   placeholder="Ví dụ: CSE301"
                   value={subjectCode}
                   onChange={(e) => setSubjectCode(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none"
+                  className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-lg outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase">Tên môn học</label>
+                <label className="text-xs font-medium text-slate-500 uppercase">Tên môn học</label>
                 <input
                   type="text"
                   required
                   placeholder="Ví dụ: Cấu trúc dữ liệu & Giải thuật"
                   value={subjectName}
                   onChange={(e) => setSubjectName(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none"
+                  className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-lg outline-none focus:border-blue-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase">Khoa phụ trách</label>
+                <label className="text-xs font-medium text-slate-500 uppercase">Khoa phụ trách</label>
                 <input
                   type="text"
                   required
                   placeholder="Ví dụ: Công nghệ thông tin"
                   value={subjectFaculty}
                   onChange={(e) => setSubjectFaculty(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none"
+                  className="w-full mt-1 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-lg outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -621,14 +583,14 @@ export function AdminDashboard({
                 <button
                   type="button"
                   onClick={() => setSubjectModalOpen(false)}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
                   disabled={isPending}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium disabled:opacity-50"
                 >
                   Lưu môn học
                 </button>
