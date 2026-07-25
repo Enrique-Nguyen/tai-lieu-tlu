@@ -84,7 +84,7 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
 
   // Track expanded faculty index for accordion UI
   const [expandedFaculty, setExpandedFaculty] = useState<string | null>(
-    currentFaculty || null
+    currentFaculty || null,
   );
 
   const toggleExpand = (facName: string, e: React.MouseEvent) => {
@@ -108,10 +108,10 @@ export function Sidebar({ onCloseMobile }: SidebarProps) {
         </div>
         <div className="flex flex-col">
           <span className="text-xs font-bold text-slate-800 dark:text-slate-100 tracking-tight">
-            ĐẠI HỌC THỦY LỢI
+            HAVARD TÂY SƠN
           </span>
           <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
-            Góc Sinh Viên TLU
+            <s>Ngôi trường em yêu</s> 💔
           </span>
         </div>
       </div>
