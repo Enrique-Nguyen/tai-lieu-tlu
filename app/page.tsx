@@ -42,21 +42,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const supabase = await createClient();
 
-  // Fetch current user & bookmarks
-  const { profile } = await getCurrentUser();
-  const currentUserId = profile?.id || null;
-  const userBookmarkIds = currentUserId ? await getUserBookmarkIds() : [];
-  const userBookmarkSet = new Set(userBookmarkIds);
-
-  // 1. Fetch subjects list for dropdown filter
-  const { data: subjectsData } = await supabase
-    .from('subjects')
-    .select('id, code, name')
-    .order('code', { ascending: true });
-
-  const subjects = subjectsData || [];
-
-  // 2. Build posts query
+  // 1. Build posts query
   let query = supabase
     .from('posts')
     .select(
@@ -105,7 +91,23 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   query = query.range(from, to);
 
-  const { data: postsRaw, count } = await query;
+  // 2. Fetch User, Subjects, and Posts in PARALLEL
+  const [currentUserRes, subjectsRes, postsRes] = await Promise.all([
+    getCurrentUser(),
+    supabase.from('subjects').select('id, code, name').order('code', { ascending: true }),
+    query,
+  ]);
+
+  const profile = currentUserRes.profile;
+  const currentUserId = profile?.id || null;
+
+  // 3. Fetch bookmarks in parallel if user is logged in
+  const userBookmarkIds = currentUserId ? await getUserBookmarkIds(currentUserId) : [];
+  const userBookmarkSet = new Set(userBookmarkIds);
+
+  const subjects = subjectsRes.data || [];
+  const postsRaw = postsRes.data;
+  const count = postsRes.count;
 
   let posts = (postsRaw as unknown as PostItem[]) || [];
 

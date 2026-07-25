@@ -35,29 +35,57 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
   const postId = resolvedParams.id;
 
   const supabase = await createClient();
-  const { profile } = await getCurrentUser();
+
+  // Run user, post, and comments queries in PARALLEL
+  const [userRes, postRes, commentsRes] = await Promise.all([
+    getCurrentUser(),
+    supabase
+      .from('posts')
+      .select(
+        `
+        id,
+        title,
+        description,
+        file_url,
+        category,
+        created_at,
+        status,
+        subjects:subject_id (id, code, name, faculty),
+        author:author_id (id, full_name, avatar_url),
+        votes (user_id, vote_type)
+      `
+      )
+      .eq('id', postId)
+      .single(),
+    supabase
+      .from('comments')
+      .select(
+        `
+        id,
+        content,
+        created_at,
+        parent_id,
+        author:author_id (
+          id,
+          full_name,
+          avatar_url,
+          academic_year,
+          major,
+          student_class,
+          role
+        )
+      `
+      )
+      .eq('post_id', postId)
+      .order('created_at', { ascending: true }),
+  ]);
+
+  const profile = userRes.profile;
   const currentUserId = profile?.id || null;
   const currentUserRole = profile?.role || null;
 
-  // Fetch post details with relationships
-  const { data: postRaw, error: postError } = await supabase
-    .from('posts')
-    .select(
-      `
-      id,
-      title,
-      description,
-      file_url,
-      category,
-      created_at,
-      status,
-      subjects:subject_id (id, code, name, faculty),
-      author:author_id (id, full_name, avatar_url),
-      votes (user_id, vote_type)
-    `
-    )
-    .eq('id', postId)
-    .single();
+  const postRaw = postRes.data;
+  const postError = postRes.error;
 
   if (postError || !postRaw) {
     notFound();
@@ -75,33 +103,10 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
   }
 
   // Fetch bookmark status for current user
-  const userBookmarkIds = currentUserId ? await getUserBookmarkIds() : [];
+  const userBookmarkIds = currentUserId ? await getUserBookmarkIds(currentUserId) : [];
   const isBookmarked = userBookmarkIds.includes(post.id);
 
-  // Fetch comments for this post
-  const { data: commentsRaw } = await supabase
-    .from('comments')
-    .select(
-      `
-      id,
-      content,
-      created_at,
-      parent_id,
-      author:author_id (
-        id,
-        full_name,
-        avatar_url,
-        academic_year,
-        major,
-        student_class,
-        role
-      )
-    `
-    )
-    .eq('post_id', postId)
-    .order('created_at', { ascending: true });
-
-  const comments = (commentsRaw as unknown as CommentItem[]) || [];
+  const comments = (commentsRes.data as unknown as CommentItem[]) || [];
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-300">

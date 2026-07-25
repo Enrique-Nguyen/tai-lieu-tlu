@@ -78,21 +78,27 @@ export async function toggleBookmarkAction({ postId }: { postId: string }) {
 }
 
 /**
- * Fetch array of bookmarked post_ids for current authenticated user
+ * Fetch array of bookmarked post_ids for current authenticated user.
+ * Optional passedUserId prevents redundant auth.getUser() call if ID is already known.
  */
-export async function getUserBookmarkIds(): Promise<string[]> {
+export async function getUserBookmarkIds(passedUserId?: string): Promise<string[]> {
   try {
     const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    let userId = passedUserId;
 
-    if (!user) return [];
+    if (!userId) {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) return [];
+      userId = user.id;
+    }
 
     const { data } = await supabase
       .from("bookmarks")
       .select("post_id")
-      .eq("user_id", user.id);
+      .eq("user_id", userId);
 
     return data ? data.map((b) => b.post_id) : [];
   } catch (err) {

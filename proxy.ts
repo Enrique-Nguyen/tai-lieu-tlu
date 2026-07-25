@@ -27,16 +27,22 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Validate user session securely
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
   const pathname = request.nextUrl.pathname
 
   // Protected paths that require authentication
   const protectedPaths = ['/upload', '/profile', '/my-posts', '/admin']
   const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path))
+  const isLoginPath = pathname === '/login'
+
+  // If path is public and not login/admin/protected, return early without DB calls
+  if (!isProtectedPath && !isLoginPath && !pathname.startsWith('/admin')) {
+    return supabaseResponse
+  }
+
+  // Validate user session securely for protected/auth routes
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   // 1. If user is NOT logged in and trying to access protected route -> redirect to /login
   if (!user && isProtectedPath) {
@@ -65,7 +71,7 @@ export async function proxy(request: NextRequest) {
     }
 
     // If completed and on /login -> redirect to /
-    if (isCompleted && pathname === '/login') {
+    if (isCompleted && isLoginPath) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/server';
+import { cache } from 'react';
 
 export interface UserProfile {
   id: string;
@@ -14,9 +15,9 @@ export interface UserProfile {
 
 /**
  * Get current authenticated user session and database profile.
- * Returns null if unauthenticated.
+ * Cached per request so multiple calls within the same render tree don't re-fetch.
  */
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   try {
     const supabase = await createClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -49,4 +50,4 @@ export async function getCurrentUser() {
     console.error('Error fetching current user:', error);
     return { user: null, profile: null };
   }
-}
+});
