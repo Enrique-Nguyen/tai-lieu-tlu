@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TLU Tài Liệu - Chia sẻ & Tra cứu Tài liệu Học tập Sinh viên Thủy Lợi",
+  title:
+    "Tài Liệu TLU - Nơi chia sẻ & tra cứu học liệu dành cho sinh viên Đại học Thủy lợi",
   description:
     "Cổng thông tin chia sẻ đề thi, slide giảng dạy, giáo trình, bài tập lớn và đồ án miễn phí cho cộng đồng sinh viên Trường Đại học Thủy lợi.",
   keywords: [
