@@ -73,7 +73,7 @@ const features = [
 const categories = [
   {
     icon: FileCheck,
-    name: 'Đề thi & Đáp án',
+    name: 'Đề cương & Bài tập',
     color: 'text-green-600 dark:text-green-400',
     bg: 'bg-green-50 dark:bg-green-950/40',
     border: 'border-green-200 dark:border-green-800',

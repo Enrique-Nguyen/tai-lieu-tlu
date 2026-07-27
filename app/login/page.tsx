@@ -214,7 +214,7 @@ export default function LoginPage() {
             </div>
             <div className="flex items-center space-x-3 text-sm text-blue-50">
               <FileText className="w-5 h-5 text-blue-200 shrink-0" />
-              <span>Đề thi & Đáp án cập nhật theo từng học kỳ</span>
+              <span>Đề cương & Bài tập cập nhật theo từng học kỳ</span>
             </div>
             <div className="flex items-center space-x-3 text-sm text-blue-50">
               <ShieldCheck className="w-5 h-5 text-blue-200 shrink-0" />

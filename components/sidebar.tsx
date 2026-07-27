@@ -48,7 +48,7 @@ const facultyIconMap: Record<string, any> = {
 
 const categories = [
   {
-    name: "Đề thi & Đáp án",
+    name: "Đề cương & Bài tập",
     slug: "dethi",
     icon: FileCheck,
   },

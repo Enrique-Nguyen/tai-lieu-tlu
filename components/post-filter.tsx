@@ -106,7 +106,7 @@ export function PostFilter({ subjects }: PostFilterProps) {
 
   const categoryPills = [
     { label: 'Tất cả', slug: '' },
-    { label: 'Đề thi & Đáp án', slug: 'dethi' },
+    { label: 'Đề cương & Bài tập', slug: 'dethi' },
     { label: 'Slide bài giảng', slug: 'slide' },
     { label: 'Bài tập lớn & Đồ án', slug: 'doan' },
     { label: 'Giáo trình & Sách', slug: 'giaotrinh' },

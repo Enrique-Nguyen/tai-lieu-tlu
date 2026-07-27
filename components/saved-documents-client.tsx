@@ -42,7 +42,7 @@ export function SavedDocumentsClient({
 
   const categoryPills = [
     { label: `Tất cả (${initialPosts.length})`, value: 'all' },
-    { label: 'Đề thi & Đáp án', value: 'Đề thi' },
+    { label: 'Đề cương & Bài tập', value: 'Đề thi' },
     { label: 'Slide bài giảng', value: 'Slide bài giảng' },
     { label: 'Bài tập lớn / Đồ án', value: 'Đồ án mẫu' },
     { label: 'Giáo trình & Sách', value: 'Sách/Giáo trình' },

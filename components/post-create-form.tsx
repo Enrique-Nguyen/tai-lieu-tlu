@@ -32,7 +32,7 @@ interface PostCreateFormProps {
 }
 
 const categories = [
-  { value: "dethi", label: "📝 Đề thi & Đáp án" },
+  { value: "dethi", label: "📝 Đề cương & Bài tập" },
   { value: "slide", label: "📊 Slide Bài giảng" },
   { value: "doan", label: "💻 Bài tập lớn / Đồ án" },
   { value: "giaotrinh", label: "📚 Giáo trình & Sách" },

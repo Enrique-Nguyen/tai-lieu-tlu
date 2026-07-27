@@ -49,7 +49,7 @@ interface MyPostsClientProps {
 // ── Config ─────────────────────────────────────────────────────────────────────
 
 const categoryConfig: Record<string, { label: string; icon: any }> = {
-  'Đề thi': { label: 'Đề thi & Đáp án', icon: FileCheck },
+  'Đề thi': { label: 'Đề cương & Bài tập', icon: FileCheck },
   'Slide bài giảng': { label: 'Slide Bài giảng', icon: Presentation },
   'Đồ án mẫu': { label: 'Bài tập lớn / Đồ án', icon: FolderGit2 },
   'Sách/Giáo trình': { label: 'Giáo trình & Sách', icon: BookMarked },

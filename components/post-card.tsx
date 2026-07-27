@@ -54,12 +54,12 @@ interface PostCardProps {
 
 const categoryConfig: Record<string, { label: string; icon: any }> = {
   // DB enum values
-  'Đề thi': { label: 'Đề thi & Đáp án', icon: FileCheck },
+  'Đề thi': { label: 'Đề cương & Bài tập', icon: FileCheck },
   'Slide bài giảng': { label: 'Slide Bài giảng', icon: Presentation },
   'Đồ án mẫu': { label: 'Bài tập lớn / Đồ án', icon: FolderGit2 },
   'Sách/Giáo trình': { label: 'Giáo trình & Sách', icon: BookMarked },
   // Legacy slug keys
-  dethi: { label: 'Đề thi & Đáp án', icon: FileCheck },
+  dethi: { label: 'Đề cương & Bài tập', icon: FileCheck },
   slide: { label: 'Slide Bài giảng', icon: Presentation },
   doan: { label: 'Bài tập lớn / Đồ án', icon: FolderGit2 },
   giaotrinh: { label: 'Giáo trình & Sách', icon: BookMarked },
