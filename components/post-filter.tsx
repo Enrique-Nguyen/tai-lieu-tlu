@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FACULTIES_DATA } from '@/lib/constants';
-import { Search, RotateCcw, X } from 'lucide-react';
+import { Search, RotateCcw, X, BookOpen, ArrowRight } from 'lucide-react';
 
 interface SubjectOption {
   id: string;
@@ -18,6 +18,7 @@ interface PostFilterProps {
 export function PostFilter({ subjects }: PostFilterProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const [q, setQ] = useState(searchParams.get('q') || '');
   const [category, setCategory] = useState(searchParams.get('category') || '');
@@ -25,6 +26,7 @@ export function PostFilter({ subjects }: PostFilterProps) {
   const [faculty, setFaculty] = useState(searchParams.get('faculty') || '');
   const [department, setDepartment] = useState(searchParams.get('department') || '');
   const [sort, setSort] = useState(searchParams.get('sort') || 'newest');
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     setQ(searchParams.get('q') || '');
@@ -35,9 +37,32 @@ export function PostFilter({ subjects }: PostFilterProps) {
     setSort(searchParams.get('sort') || 'newest');
   }, [searchParams]);
 
+  // Handle click outside search container
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const availableDepartments = faculty
     ? FACULTIES_DATA.find((f) => f.name === faculty)?.departments || []
     : FACULTIES_DATA.flatMap((f) => f.departments);
+
+  // Filter matching subjects for search suggestions
+  const trimmedQ = q.trim().toLowerCase();
+  const matchingSubjectSuggestions = trimmedQ
+    ? subjects
+        .filter(
+          (sub) =>
+            sub.name.toLowerCase().includes(trimmedQ) ||
+            sub.code.toLowerCase().includes(trimmedQ)
+        )
+        .slice(0, 6)
+    : [];
 
   const updateFilters = (newParams: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -54,7 +79,14 @@ export function PostFilter({ subjects }: PostFilterProps) {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setIsOpen(false);
     updateFilters({ q: q.trim() || null });
+  };
+
+  const handleSelectSubjectSuggestion = (sub: SubjectOption) => {
+    setQ(sub.name);
+    setIsOpen(false);
+    updateFilters({ q: sub.name });
   };
 
   const handleReset = () => {
@@ -64,6 +96,7 @@ export function PostFilter({ subjects }: PostFilterProps) {
     setFaculty('');
     setDepartment('');
     setSort('newest');
+    setIsOpen(false);
     router.push('/');
   };
 
@@ -81,15 +114,19 @@ export function PostFilter({ subjects }: PostFilterProps) {
 
   return (
     <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3">
-      {/* Search Input Bar */}
+      {/* Search Input Bar with Suggestions Dropdown */}
       <form onSubmit={handleSearchSubmit} className="flex gap-2">
-        <div className="relative flex-1">
+        <div ref={searchRef} className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Tìm theo tên môn học, mã môn hoặc tiêu đề..."
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setIsOpen(true);
+            }}
+            onFocus={() => setIsOpen(true)}
             className="w-full pl-10 pr-10 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-sm rounded-lg outline-none focus:border-blue-500 transition-colors placeholder:text-slate-400"
           />
           {q && (
@@ -97,12 +134,55 @@ export function PostFilter({ subjects }: PostFilterProps) {
               type="button"
               onClick={() => {
                 setQ('');
+                setIsOpen(false);
                 updateFilters({ q: null });
               }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
+          )}
+
+          {/* Autocomplete Suggestions Panel */}
+          {isOpen && trimmedQ && matchingSubjectSuggestions.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl z-50 overflow-hidden divide-y divide-slate-100 dark:divide-slate-700/60 animate-in fade-in slide-in-from-top-1 duration-150">
+              <div className="px-3.5 py-2 bg-slate-50 dark:bg-slate-800/80 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                <span className="flex items-center gap-1.5">
+                  <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+                  Gợi ý môn học ({matchingSubjectSuggestions.length})
+                </span>
+                <span>Nhấn để tìm</span>
+              </div>
+
+              <div className="py-1">
+                {matchingSubjectSuggestions.map((sub) => (
+                  <button
+                    key={sub.id}
+                    type="button"
+                    onClick={() => handleSelectSubjectSuggestion(sub)}
+                    className="w-full text-left px-3.5 py-2 hover:bg-blue-50 dark:hover:bg-blue-950/60 flex items-center justify-between group transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+                      <span className="inline-block px-2 py-0.5 rounded text-[11px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 shrink-0">
+                        {sub.code}
+                      </span>
+                      <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                        {sub.name}
+                      </span>
+                    </div>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 group-hover:text-blue-500 transition-transform group-hover:translate-x-0.5 shrink-0" />
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="submit"
+                className="w-full text-left px-3.5 py-2 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/60 flex items-center justify-between transition-colors cursor-pointer"
+              >
+                <span>Tìm kiếm từ khóa <strong className="text-slate-800 dark:text-slate-200">"{q}"</strong> cho tất cả tài liệu</span>
+                <Search className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+            </div>
           )}
         </div>
         <button
