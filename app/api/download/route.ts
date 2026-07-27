@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/server";
-import { checkUserBlockStatus } from "@/lib/server-guard";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -19,9 +18,54 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (user) {
-      const blockStatus = await checkUserBlockStatus(user.id);
-      if (blockStatus.isBlocked) {
-        return NextResponse.json({ error: blockStatus.error }, { status: 403 });
+      // Re-use the same supabase instance instead of creating a new one inside checkUserBlockStatus
+      const { data: profile } = await supabase
+        .from("users")
+        .select("status, ban_reason, suspended_until")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (profile) {
+        const status = profile.status || "active";
+        const banReason =
+          profile.ban_reason || "Vi phạm quy định của hệ thống";
+
+        if (status === "banned") {
+          return NextResponse.json(
+            {
+              error: `Tài khoản của bạn đã bị khóa vĩnh viễn do: ${banReason}`,
+            },
+            { status: 403 }
+          );
+        }
+
+        if (status === "suspended" && profile.suspended_until) {
+          const now = new Date();
+          const expireTime = new Date(profile.suspended_until);
+
+          if (now < expireTime) {
+            const formattedDate = expireTime.toLocaleString("vi-VN", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            });
+            return NextResponse.json(
+              {
+                error: `Tài khoản của bạn bị tạm khóa đến ${formattedDate}. Lý do: ${banReason}`,
+              },
+              { status: 403 }
+            );
+          }
+
+          // Suspension expired → auto reinstate
+          await supabase
+            .from("users")
+            .update({
+              status: "active",
+              suspended_until: null,
+              ban_reason: null,
+            })
+            .eq("id", user.id);
+        }
       }
     }
   } catch {
