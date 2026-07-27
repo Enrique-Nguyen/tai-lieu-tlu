@@ -284,7 +284,79 @@ export async function updateUserRoleAction({
 }
 
 /**
- * 7. Ban User (Admin & Moderator)
+ * 7. Suspend User temporarily (Admin & Moderator)
+ */
+export async function suspendUserAction({
+  targetUserId,
+  days,
+  reason,
+}: {
+  targetUserId: string;
+  days: number;
+  reason: string;
+}) {
+  try {
+    const { user, isAdmin, isMod } = await checkAdminOrMod();
+
+    if (!isAdmin && !isMod) {
+      return { success: false, error: 'Bạn không có quyền khóa tạm thời người dùng.' };
+    }
+
+    if (!user) {
+      return { success: false, error: 'Bạn chưa đăng nhập.' };
+    }
+
+    if (targetUserId === user.id) {
+      return { success: false, error: 'Bạn không thể tự khóa tài khoản của chính mình.' };
+    }
+
+    const trimmedReason = reason.trim();
+    if (!trimmedReason) {
+      return { success: false, error: 'Vui lòng nhập lý do khóa tạm thời.' };
+    }
+
+    if (!days || days < 1) {
+      return { success: false, error: 'Số ngày tạm khóa không hợp lệ (tối thiểu 1 ngày).' };
+    }
+
+    const suspendedUntil = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+
+    const payload = {
+      status: 'suspended',
+      ban_reason: trimmedReason,
+      suspended_until: suspendedUntil,
+      banned_at: new Date().toISOString(),
+    };
+
+    const adminClient = createAdminClient();
+
+    if (adminClient) {
+      const { error: adminErr } = await adminClient
+        .from('users')
+        .update(payload)
+        .eq('id', targetUserId);
+
+      if (adminErr) throw adminErr;
+    } else {
+      const supabase = await createClient();
+      const { error } = await supabase
+        .from('users')
+        .update(payload)
+        .eq('id', targetUserId);
+
+      if (error) throw error;
+    }
+
+    revalidatePath('/admin');
+    return { success: true, message: `Đã khóa tạm thời tài khoản trong ${days} ngày.` };
+  } catch (err: any) {
+    console.error('Lỗi khi khóa tạm thời tài khoản:', err);
+    return { success: false, error: err.message || 'Khóa tạm thời thất bại.' };
+  }
+}
+
+/**
+ * 8. Ban User permanently (Admin & Moderator)
  */
 export async function banUserAction({
   targetUserId,
@@ -316,6 +388,7 @@ export async function banUserAction({
     const payload = {
       status: 'banned',
       ban_reason: trimmedReason,
+      suspended_until: null,
       banned_at: new Date().toISOString(),
     };
 
@@ -339,7 +412,7 @@ export async function banUserAction({
     }
 
     revalidatePath('/admin');
-    return { success: true, message: 'Đã khóa tài khoản người dùng thành công.' };
+    return { success: true, message: 'Đã khóa vĩnh viễn tài khoản người dùng thành công.' };
   } catch (err: any) {
     console.error('Lỗi khi khóa tài khoản:', err);
     return { success: false, error: err.message || 'Khóa tài khoản thất bại.' };
@@ -347,7 +420,7 @@ export async function banUserAction({
 }
 
 /**
- * 8. Unban User (Admin & Moderator)
+ * 9. Unban / Reinstate User (Admin & Moderator)
  */
 export async function unbanUserAction({ targetUserId }: { targetUserId: string }) {
   try {
@@ -364,6 +437,7 @@ export async function unbanUserAction({ targetUserId }: { targetUserId: string }
     const payload = {
       status: 'active',
       ban_reason: null,
+      suspended_until: null,
       banned_at: null,
     };
 

@@ -10,6 +10,7 @@ import {
   deleteSubjectAction,
   updateUserRoleAction,
   banUserAction,
+  suspendUserAction,
   unbanUserAction,
 } from '@/app/actions/admin';
 import {
@@ -29,7 +30,7 @@ import {
   Ban,
   UserCheck,
   ShieldAlert,
-  Lock,
+  Clock,
 } from 'lucide-react';
 
 interface PendingPost {
@@ -64,9 +65,10 @@ interface UserItem {
   full_name: string | null;
   avatar_url: string | null;
   role: 'student' | 'moderator' | 'admin';
-  status?: 'active' | 'banned';
+  status?: 'active' | 'suspended' | 'banned';
   ban_reason?: string | null;
   banned_at?: string | null;
+  suspended_until?: string | null;
   academic_year: string | null;
   major: string | null;
 }
@@ -92,7 +94,7 @@ export function AdminDashboard({
   const [isPending, startTransition] = useTransition();
 
   const [userSearch, setUserSearch] = useState('');
-  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'banned'>('all');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'suspended' | 'banned'>('all');
 
   // Subject Modal State
   const [subjectModalOpen, setSubjectModalOpen] = useState(false);
@@ -101,10 +103,17 @@ export function AdminDashboard({
   const [subjectName, setSubjectName] = useState('');
   const [subjectFaculty, setSubjectFaculty] = useState('');
 
-  // Ban User Modal State
+  // Permanent Ban User Modal State
   const [banModalOpen, setBanModalOpen] = useState(false);
   const [banningUser, setBanningUser] = useState<UserItem | null>(null);
   const [banReasonInput, setBanReasonInput] = useState('');
+
+  // Temporary Suspend User Modal State
+  const [suspendModalOpen, setSuspendModalOpen] = useState(false);
+  const [suspendingUser, setSuspendingUser] = useState<UserItem | null>(null);
+  const [suspendOption, setSuspendOption] = useState<'3' | '7' | '30' | 'custom'>('7');
+  const [customDaysInput, setCustomDaysInput] = useState('14');
+  const [suspendReasonInput, setSuspendReasonInput] = useState('');
 
   const isAdmin = currentUserRole === 'admin';
 
@@ -188,7 +197,7 @@ export function AdminDashboard({
     });
   };
 
-  // 5. Ban & Unban Handlers
+  // 5. Permanent Ban Handlers
   const handleOpenBanModal = (u: UserItem) => {
     setBanningUser(u);
     setBanReasonInput('');
@@ -215,8 +224,46 @@ export function AdminDashboard({
     });
   };
 
+  // 6. Temporary Suspend Handlers
+  const handleOpenSuspendModal = (u: UserItem) => {
+    setSuspendingUser(u);
+    setSuspendOption('7');
+    setCustomDaysInput('14');
+    setSuspendReasonInput('');
+    setSuspendModalOpen(true);
+  };
+
+  const handleConfirmSuspend = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!suspendingUser || !suspendReasonInput.trim()) return;
+
+    const days = suspendOption === 'custom' ? parseInt(customDaysInput, 10) : parseInt(suspendOption, 10);
+
+    if (!days || isNaN(days) || days < 1) {
+      alert('Vui lòng nhập số ngày tạm khóa hợp lệ (tối thiểu 1 ngày).');
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await suspendUserAction({
+        targetUserId: suspendingUser.id,
+        days,
+        reason: suspendReasonInput.trim(),
+      });
+
+      if (res.success) {
+        setSuspendModalOpen(false);
+        setSuspendingUser(null);
+        setSuspendReasonInput('');
+      } else {
+        alert(res.error);
+      }
+    });
+  };
+
+  // 7. Unban / Reinstate Handler
   const handleUnbanUser = (u: UserItem) => {
-    if (!confirm(`Bạn có chắc chắn muốn MỞ KHÓA tài khoản của "${u.full_name || u.email}"?`)) return;
+    if (!confirm(`Bạn có chắc chắn muốn MỞ KHÓA / KHÔI PHỤC tài khoản của "${u.full_name || u.email}"?`)) return;
 
     startTransition(async () => {
       const res = await unbanUserAction({ targetUserId: u.id });
@@ -236,7 +283,8 @@ export function AdminDashboard({
     return matchesSearch && matchesStatus;
   });
 
-  const activeCount = usersList.filter((u) => u.status !== 'banned').length;
+  const activeCount = usersList.filter((u) => u.status === 'active' || !u.status).length;
+  const suspendedCount = usersList.filter((u) => u.status === 'suspended').length;
   const bannedCount = usersList.filter((u) => u.status === 'banned').length;
 
   const tabs = [
@@ -262,7 +310,7 @@ export function AdminDashboard({
             Admin & Moderator Dashboard
           </h1>
           <p className="text-blue-100 text-xs sm:text-sm">
-            Duyệt tài liệu, xử lý báo cáo vi phạm, quản lý người dùng và trạng thái khóa tài khoản.
+            Duyệt tài liệu, xử lý báo cáo vi phạm, quản lý người dùng (Khóa tạm thời & Khóa vĩnh viễn).
           </p>
         </div>
 
@@ -438,12 +486,12 @@ export function AdminDashboard({
         </div>
       )}
 
-      {/* Tab 3: Users Management & Ban/Unban */}
+      {/* Tab 3: Users Management & Ban/Suspend/Unban */}
       {activeTab === 'users' && (
         <div className="space-y-4">
           <div className="flex justify-between items-center gap-4 flex-wrap">
             {/* Status Filter Pills */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <button
                 onClick={() => setUserStatusFilter('all')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
@@ -468,6 +516,18 @@ export function AdminDashboard({
               </button>
 
               <button
+                onClick={() => setUserStatusFilter('suspended')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center space-x-1 ${
+                  userStatusFilter === 'suspended'
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100'
+                }`}
+              >
+                <Clock className="w-3.5 h-3.5" />
+                <span>Tạm khóa ({suspendedCount})</span>
+              </button>
+
+              <button
                 onClick={() => setUserStatusFilter('banned')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center space-x-1 ${
                   userStatusFilter === 'banned'
@@ -476,12 +536,12 @@ export function AdminDashboard({
                 }`}
               >
                 <Ban className="w-3.5 h-3.5" />
-                <span>Đã bị khóa ({bannedCount})</span>
+                <span>Khóa vĩnh viễn ({bannedCount})</span>
               </button>
             </div>
 
             {/* Search Input */}
-            <div className="relative w-full sm:w-72">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input
                 type="text"
@@ -503,14 +563,23 @@ export function AdminDashboard({
                     <th className="p-4">Email</th>
                     <th className="p-4">Trạng thái</th>
                     <th className="p-4">Vai trò</th>
-                    <th className="p-4 text-right">Thao tác</th>
+                    <th className="p-4 text-right">Thao tác Quản trị</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {filteredUsers.length > 0 ? (
                     filteredUsers.map((u) => {
                       const isSelf = u.id === currentUserId;
-                      const isBanned = u.status === 'banned';
+                      const status = u.status || 'active';
+                      const isBanned = status === 'banned';
+                      const isSuspended = status === 'suspended';
+
+                      const suspendedUntilFormatted = u.suspended_until
+                        ? new Date(u.suspended_until).toLocaleString('vi-VN', {
+                            dateStyle: 'short',
+                            timeStyle: 'short',
+                          })
+                        : null;
 
                       return (
                         <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40">
@@ -544,13 +613,24 @@ export function AdminDashboard({
                               <div className="group relative inline-block">
                                 <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 cursor-help">
                                   <Ban className="w-3 h-3" />
-                                  <span>Bị khóa</span>
+                                  <span>Khóa vĩnh viễn</span>
                                 </span>
                                 {u.ban_reason && (
-                                  <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-20 w-48 p-2 bg-slate-900 text-white text-[11px] rounded-lg shadow-lg">
+                                  <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-20 w-52 p-2 bg-slate-900 text-white text-[11px] rounded-lg shadow-lg">
                                     <strong>Lý do:</strong> {u.ban_reason}
                                   </div>
                                 )}
+                              </div>
+                            ) : isSuspended ? (
+                              <div className="group relative inline-block">
+                                <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-help">
+                                  <Clock className="w-3 h-3" />
+                                  <span>Tạm khóa</span>
+                                </span>
+                                <div className="absolute left-0 top-full mt-1 hidden group-hover:block z-20 w-56 p-2 bg-slate-900 text-white text-[11px] rounded-lg shadow-lg space-y-1">
+                                  <p><strong>Hạn đến:</strong> {suspendedUntilFormatted}</p>
+                                  {u.ban_reason && <p><strong>Lý do:</strong> {u.ban_reason}</p>}
+                                </div>
                               </div>
                             ) : (
                               <span className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
@@ -583,10 +663,10 @@ export function AdminDashboard({
                             )}
                           </td>
 
-                          {/* Ban / Unban Action */}
+                          {/* Ban / Suspend / Unban Actions */}
                           <td className="p-4 text-right">
                             {!isSelf && (
-                              isBanned ? (
+                              isBanned || isSuspended ? (
                                 <button
                                   onClick={() => handleUnbanUser(u)}
                                   disabled={isPending}
@@ -596,14 +676,27 @@ export function AdminDashboard({
                                   <span>Mở khóa</span>
                                 </button>
                               ) : (
-                                <button
-                                  onClick={() => handleOpenBanModal(u)}
-                                  disabled={isPending}
-                                  className="px-3 py-1.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 rounded-lg text-xs font-semibold transition-colors cursor-pointer inline-flex items-center space-x-1"
-                                >
-                                  <Ban className="w-3.5 h-3.5" />
-                                  <span>Khóa tài khoản</span>
-                                </button>
+                                <div className="inline-flex items-center gap-1.5">
+                                  <button
+                                    onClick={() => handleOpenSuspendModal(u)}
+                                    disabled={isPending}
+                                    className="px-2.5 py-1.5 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-900 rounded-lg text-xs font-semibold transition-colors cursor-pointer inline-flex items-center space-x-1"
+                                    title="Khóa tạm thời có thời hạn"
+                                  >
+                                    <Clock className="w-3.5 h-3.5" />
+                                    <span>Tạm khóa</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleOpenBanModal(u)}
+                                    disabled={isPending}
+                                    className="px-2.5 py-1.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-100 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900 rounded-lg text-xs font-semibold transition-colors cursor-pointer inline-flex items-center space-x-1"
+                                    title="Khóa vĩnh viễn"
+                                  >
+                                    <Ban className="w-3.5 h-3.5" />
+                                    <span>Khóa vĩnh viễn</span>
+                                  </button>
+                                </div>
                               )
                             )}
                           </td>
@@ -753,7 +846,107 @@ export function AdminDashboard({
         </div>
       )}
 
-      {/* Ban User Modal */}
+      {/* Temporary Suspend User Modal */}
+      {suspendModalOpen && suspendingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setSuspendModalOpen(false)} />
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-xl p-6 shadow-xl z-10 space-y-4 border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center space-x-2 text-amber-600 dark:text-amber-400">
+              <Clock className="w-5 h-5" />
+              <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
+                Khóa tạm thời tài khoản
+              </h3>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400">
+              Bạn đang thực hiện khóa tạm thời tài khoản{' '}
+              <strong className="text-slate-900 dark:text-slate-100">{suspendingUser.full_name || suspendingUser.email}</strong> ({suspendingUser.email}).
+              Khi hết thời hạn khóa, tài khoản sẽ tự động khôi phục về trạng thái hoạt động.
+            </p>
+
+            <form onSubmit={handleConfirmSuspend} className="space-y-4">
+              {/* Duration Selection */}
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider block mb-1.5">
+                  Thời hạn khóa tạm thời
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { label: '3 ngày', value: '3' },
+                    { label: '7 ngày', value: '7' },
+                    { label: '30 ngày', value: '30' },
+                    { label: 'Tùy chỉnh', value: 'custom' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setSuspendOption(opt.value as any)}
+                      className={`py-2 text-xs font-medium rounded-lg border transition-colors ${
+                        suspendOption === opt.value
+                          ? 'bg-amber-600 text-white border-amber-600'
+                          : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Days Input */}
+                {suspendOption === 'custom' && (
+                  <div className="mt-2 flex items-center space-x-2">
+                    <input
+                      type="number"
+                      min={1}
+                      max={365}
+                      required
+                      value={customDaysInput}
+                      onChange={(e) => setCustomDaysInput(e.target.value)}
+                      className="w-28 px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-lg outline-none focus:border-amber-500"
+                    />
+                    <span className="text-xs text-slate-500">ngày</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Reason Input */}
+              <div>
+                <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Lý do khóa tạm thời <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Ví dụ: Vi phạm quy định đăng bài rác, spam bình luận, cần tạm ngưng tài khoản 7 ngày..."
+                  value={suspendReasonInput}
+                  onChange={(e) => setSuspendReasonInput(e.target.value)}
+                  className="w-full mt-1.5 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none focus:border-amber-500 transition-colors"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setSuspendModalOpen(false)}
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium hover:bg-slate-200"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending || !suspendReasonInput.trim()}
+                  className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center space-x-1"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Xác nhận khóa tạm thời</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Permanent Ban User Modal */}
       {banModalOpen && banningUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setBanModalOpen(false)} />
@@ -761,25 +954,25 @@ export function AdminDashboard({
             <div className="flex items-center space-x-2 text-red-600 dark:text-red-400">
               <ShieldAlert className="w-5 h-5" />
               <h3 className="font-bold text-base text-slate-900 dark:text-slate-100">
-                Khóa tài khoản người dùng
+                Khóa vĩnh viễn tài khoản
               </h3>
             </div>
 
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Bạn đang thực hiện khóa tài khoản{' '}
+              Bạn đang thực hiện khóa vĩnh viễn tài khoản{' '}
               <strong className="text-slate-900 dark:text-slate-100">{banningUser.full_name || banningUser.email}</strong> ({banningUser.email}).
-              Người dùng bị khóa sẽ không thể đăng bài, bình luận hoặc sử dụng các tính năng tương tác.
+              Tài khoản này sẽ bị cấm truy cập hoàn toàn cho đến khi được Admin mở khóa thủ công.
             </p>
 
             <form onSubmit={handleConfirmBan} className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Lý do khóa tài khoản <span className="text-red-500">*</span>
+                  Lý do khóa vĩnh viễn <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   required
                   rows={3}
-                  placeholder="Ví dụ: Vi phạm quy chuẩn cộng đồng, đăng nội dung rác hoặc không phù hợp..."
+                  placeholder="Ví dụ: Vi phạm quy chuẩn cộng đồng nghiêm trọng, giả mạo tài khoản..."
                   value={banReasonInput}
                   onChange={(e) => setBanReasonInput(e.target.value)}
                   className="w-full mt-1.5 p-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 text-xs rounded-xl outline-none focus:border-red-500 transition-colors"
@@ -800,7 +993,7 @@ export function AdminDashboard({
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center space-x-1"
                 >
                   <Ban className="w-3.5 h-3.5" />
-                  <span>Xác nhận khóa</span>
+                  <span>Xác nhận khóa vĩnh viễn</span>
                 </button>
               </div>
             </form>

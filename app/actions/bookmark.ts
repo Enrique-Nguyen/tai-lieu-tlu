@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/server";
+import { checkUserBlockStatus } from "@/lib/server-guard";
 import { revalidatePath } from "next/cache";
 
 export async function toggleBookmarkAction({ postId }: { postId: string }) {
@@ -19,18 +20,13 @@ export async function toggleBookmarkAction({ postId }: { postId: string }) {
       };
     }
 
-    // Check if user account is banned
-    const { data: userProfile } = await supabase
-      .from("users")
-      .select("status, ban_reason")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (userProfile?.status === "banned") {
+    // Check if user account is banned or suspended
+    const blockCheck = await checkUserBlockStatus(user.id);
+    if (blockCheck.isBlocked) {
       return {
         success: false,
         isBookmarked: false,
-        error: `Tài khoản của bạn đã bị khóa: ${userProfile.ban_reason || "Vi phạm quy định"}. Không thể thực hiện thao tác lưu tài liệu.`,
+        error: blockCheck.error || "Tài khoản của bạn đang bị hạn chế.",
       };
     }
 

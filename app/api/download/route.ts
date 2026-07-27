@@ -10,8 +10,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // 1. Fetch original file from Supabase Storage or remote URL
-    const response = await fetch(fileUrl);
+    // 1. Fetch original file from Supabase Storage or remote URL with 10s timeout
+    const response = await fetch(fileUrl, {
+      signal: AbortSignal.timeout(8000),
+    });
     if (!response.ok) {
       return new NextResponse("Failed to fetch file from storage", {
         status: response.status,
@@ -51,7 +53,10 @@ export async function GET(request: NextRequest) {
         extension = ".jpg";
       else if (contentType.includes("zip")) extension = ".zip";
       else if (contentType.includes("rar")) extension = ".rar";
-      else if (contentType.includes("presentation") || contentType.includes("pptx"))
+      else if (
+        contentType.includes("presentation") ||
+        contentType.includes("pptx")
+      )
         extension = ".pptx";
     }
 
@@ -82,8 +87,8 @@ export async function GET(request: NextRequest) {
       "Content-Disposition",
       `attachment; filename="${safeTitle.replace(
         /"/g,
-        '\\"'
-      )}"; filename*=UTF-8''${encodedFilename}`
+        '\\"',
+      )}"; filename*=UTF-8''${encodedFilename}`,
     );
     headers.set("Cache-Control", "public, max-age=3600, must-revalidate");
 

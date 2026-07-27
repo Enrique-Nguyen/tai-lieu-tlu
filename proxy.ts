@@ -34,9 +34,10 @@ export async function proxy(request: NextRequest) {
   const isProtectedPath = protectedPaths.some((path) => pathname.startsWith(path))
   const isLoginPath = pathname === '/login'
   const isBannedPath = pathname === '/banned'
+  const isSuspendedPath = pathname === '/suspended'
 
-  // If path is public and not login/admin/protected/banned, return early without DB calls
-  if (!isProtectedPath && !isLoginPath && !pathname.startsWith('/admin') && !isBannedPath) {
+  // If path is public and not login/admin/protected/banned/suspended, return early without DB calls
+  if (!isProtectedPath && !isLoginPath && !pathname.startsWith('/admin') && !isBannedPath && !isSuspendedPath) {
     return supabaseResponse
   }
 
@@ -53,7 +54,7 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set('next', pathname)
       return NextResponse.redirect(url)
     }
-    if (isBannedPath) {
+    if (isBannedPath || isSuspendedPath) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)
@@ -65,12 +66,15 @@ export async function proxy(request: NextRequest) {
   if (user) {
     const { data: dbUser } = await supabase
       .from('users')
-      .select('is_profile_completed, role, status')
+      .select('is_profile_completed, role, status, suspended_until')
       .eq('id', user.id)
       .maybeSingle()
 
-    // Banned check: If user status is 'banned' and not on /banned -> redirect to /banned
-    if (dbUser?.status === 'banned') {
+    const userStatus = dbUser?.status || 'active'
+    const suspendedUntil = dbUser?.suspended_until
+
+    // Permanent Ban check: If user status is 'banned' -> redirect to /banned
+    if (userStatus === 'banned') {
       if (!isBannedPath) {
         const url = request.nextUrl.clone()
         url.pathname = '/banned'
@@ -79,8 +83,34 @@ export async function proxy(request: NextRequest) {
       return supabaseResponse
     }
 
-    // If user is NOT banned but on /banned -> redirect to /
-    if (isBannedPath && dbUser?.status !== 'banned') {
+    // Temporary Suspension check: If user status is 'suspended'
+    if (userStatus === 'suspended' && suspendedUntil) {
+      const now = new Date()
+      const expireTime = new Date(suspendedUntil)
+
+      if (now < expireTime) {
+        // Suspension active -> redirect to /suspended
+        if (!isSuspendedPath) {
+          const url = request.nextUrl.clone()
+          url.pathname = '/suspended'
+          return NextResponse.redirect(url)
+        }
+        return supabaseResponse
+      } else {
+        // Suspension expired -> auto reinstate to active in DB
+        await supabase
+          .from('users')
+          .update({
+            status: 'active',
+            suspended_until: null,
+            ban_reason: null,
+          })
+          .eq('id', user.id)
+      }
+    }
+
+    // If user is NOT banned and NOT suspended, but on /banned or /suspended -> redirect to /
+    if (isBannedPath || isSuspendedPath) {
       const url = request.nextUrl.clone()
       url.pathname = '/'
       return NextResponse.redirect(url)

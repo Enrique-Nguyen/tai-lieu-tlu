@@ -7,9 +7,10 @@ export interface UserProfile {
   full_name: string | null;
   avatar_url: string | null;
   role: 'student' | 'moderator' | 'admin';
-  status?: 'active' | 'banned';
+  status?: 'active' | 'suspended' | 'banned';
   ban_reason?: string | null;
   banned_at?: string | null;
+  suspended_until?: string | null;
   academic_year: string | null;
   major: string | null;
   student_class: string | null;
@@ -19,6 +20,7 @@ export interface UserProfile {
 /**
  * Get current authenticated user session and database profile.
  * Cached per request so multiple calls within the same render tree don't re-fetch.
+ * Automatically checks and expires temporary suspensions if NOW() >= suspended_until.
  */
 export const getCurrentUser = cache(async () => {
   try {
@@ -29,15 +31,39 @@ export const getCurrentUser = cache(async () => {
       return { user: null, profile: null };
     }
 
-    const { data: profile } = await supabase
+    const { data: profileRaw } = await supabase
       .from('users')
       .select('*')
       .eq('id', user.id)
       .single();
 
+    let profile = profileRaw as UserProfile | null;
+
+    // Check if user is suspended and suspended_until has passed -> auto reinstatement
+    if (profile && profile.status === 'suspended' && profile.suspended_until) {
+      const now = new Date();
+      const expireTime = new Date(profile.suspended_until);
+
+      if (now >= expireTime) {
+        // Expiration time passed: automatically restore status to active
+        await supabase
+          .from('users')
+          .update({
+            status: 'active',
+            suspended_until: null,
+            ban_reason: null,
+          })
+          .eq('id', user.id);
+
+        profile.status = 'active';
+        profile.suspended_until = null;
+        profile.ban_reason = null;
+      }
+    }
+
     return {
       user,
-      profile: (profile as UserProfile | null) ?? {
+      profile: profile ?? {
         id: user.id,
         email: user.email || '',
         full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Sinh viên',
@@ -46,6 +72,7 @@ export const getCurrentUser = cache(async () => {
         status: 'active',
         ban_reason: null,
         banned_at: null,
+        suspended_until: null,
         academic_year: null,
         major: null,
         student_class: null,
