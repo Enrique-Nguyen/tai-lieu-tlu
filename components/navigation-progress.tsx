@@ -42,19 +42,49 @@ export function NavigationProgress() {
     };
   }, [pathname, searchParams]);
 
+  const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Also show a "loading" state while waiting for the route change to begin
   // by hooking into link click events
   useEffect(() => {
     const handleLinkClick = (e: MouseEvent) => {
       const target = (e.target as HTMLElement).closest('a');
       if (!target) return;
+
       const href = target.getAttribute('href');
-      if (!href || href.startsWith('#') || href.startsWith('http') || href.startsWith('mailto')) return;
-      if (target.getAttribute('target') === '_blank') return;
+      if (
+        !href ||
+        href.startsWith('#') ||
+        href.startsWith('http://') ||
+        href.startsWith('https://') ||
+        href.startsWith('blob:') ||
+        href.startsWith('data:') ||
+        href.startsWith('javascript:') ||
+        href.startsWith('mailto:') ||
+        href.startsWith('tel:') ||
+        href.startsWith('/api/')
+      ) {
+        return;
+      }
+
+      if (
+        target.hasAttribute('download') ||
+        target.getAttribute('download') !== null ||
+        target.getAttribute('target') === '_blank'
+      ) {
+        return;
+      }
 
       // Start the progress bar immediately on click
       setVisible(true);
       setProgress(0);
+
+      // Safety timer: auto-hide after 6s if navigation never completes (e.g. download or aborted)
+      if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current);
+      safetyTimerRef.current = setTimeout(() => {
+        setVisible(false);
+        setTimeout(() => setProgress(0), 300);
+      }, 6000);
 
       // Animate to ~85% quickly, then slow down (simulating loading)
       let prog = 0;
@@ -72,6 +102,7 @@ export function NavigationProgress() {
     return () => {
       document.removeEventListener('click', handleLinkClick);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (safetyTimerRef.current) clearTimeout(safetyTimerRef.current);
     };
   }, []);
 
