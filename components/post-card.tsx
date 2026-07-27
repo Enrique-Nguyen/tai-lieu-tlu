@@ -17,7 +17,6 @@ import {
   Calendar,
   Share2,
   Check,
-  Eye,
 } from 'lucide-react';
 
 export interface PostItem {
@@ -257,27 +256,17 @@ export function PostCard({ post, currentUserId, isBookmarked = false }: PostCard
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center space-x-2">
-          <Link
-            href={`/post/${post.id}`}
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-medium transition-colors"
+        {post.file_url && (
+          <a
+            href={`/api/download?url=${encodeURIComponent(post.file_url)}&title=${encodeURIComponent(post.title)}`}
+            download
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg text-xs font-medium transition-all"
+            title={`Tải file: ${post.title}`}
           >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Xem</span>
-          </Link>
-
-          {post.file_url && (
-            <a
-              href={`/api/download?url=${encodeURIComponent(post.file_url)}&title=${encodeURIComponent(post.title)}`}
-              download
-              className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg text-xs font-medium transition-all"
-              title={`Tải file: ${post.title}`}
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Tải file</span>
-            </a>
-          )}
-        </div>
+            <Download className="w-3.5 h-3.5" />
+            <span>Tải file</span>
+          </a>
+        )}
 
       </div>
     </article>

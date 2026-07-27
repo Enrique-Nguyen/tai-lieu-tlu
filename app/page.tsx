@@ -79,9 +79,20 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   }
 
   if (q) {
-    query = query.or(
-      `title.ilike.%${q}%,description.ilike.%${q}%,subjects.name.ilike.%${q}%,subjects.code.ilike.%${q}%`
-    );
+    // Supabase does not support filtering on joined-table columns inside .or().
+    // Solution: pre-query subjects that match the keyword, then use their IDs in the posts filter.
+    const { data: matchingSubjects } = await supabase
+      .from('subjects')
+      .select('id')
+      .or(`name.ilike.%${q}%,code.ilike.%${q}%`);
+
+    const matchingSubjectIds = (matchingSubjects || []).map((s) => s.id);
+
+    const orParts = [`title.ilike.%${q}%`, `description.ilike.%${q}%`];
+    if (matchingSubjectIds.length > 0) {
+      orParts.push(`subject_id.in.(${matchingSubjectIds.join(',')})`);
+    }
+    query = query.or(orParts.join(','));
   }
 
   // Sorting
