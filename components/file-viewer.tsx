@@ -1,7 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, ExternalLink, FileText, FileArchive, Eye, Maximize2, EyeOff } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import {
+  Download,
+  ExternalLink,
+  FileText,
+  FileArchive,
+  Eye,
+  Maximize2,
+  Minimize2,
+  EyeOff,
+  X,
+} from 'lucide-react';
 
 interface FileViewerProps {
   fileUrl: string | null;
@@ -11,6 +21,7 @@ interface FileViewerProps {
 export function FileViewer({ fileUrl, title }: FileViewerProps) {
   const [fullscreen, setFullscreen] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   if (!fileUrl) return null;
 
@@ -22,9 +33,68 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
 
   const downloadUrl = `/api/download?url=${encodeURIComponent(fileUrl)}&title=${encodeURIComponent(title)}`;
 
+  // Handle native Fullscreen API changes & Esc key
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isFs = Boolean(document.fullscreenElement);
+      setFullscreen(isFs);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && fullscreen) {
+        exitFullscreen();
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [fullscreen]);
+
+  // Lock body scroll when fullscreen is active
+  useEffect(() => {
+    if (fullscreen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [fullscreen]);
+
+  const enterFullscreen = async () => {
+    setShowPreview(true);
+    setFullscreen(true);
+
+    if (containerRef.current) {
+      try {
+        if (containerRef.current.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+        }
+      } catch {
+        // Fallback to CSS fullscreen overlay if native API fails or is restricted
+      }
+    }
+  };
+
+  const exitFullscreen = async () => {
+    if (document.fullscreenElement && document.exitFullscreen) {
+      try {
+        await document.exitFullscreen();
+      } catch {
+        // Fallback
+      }
+    }
+    setFullscreen(false);
+  };
+
   return (
     <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm space-y-4">
-      
       {/* File Header Bar */}
       <div className="flex items-center justify-between gap-3 flex-wrap border-b border-slate-100 dark:border-slate-800 pb-3">
         <div className="flex items-center space-x-2.5">
@@ -41,7 +111,7 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
           </div>
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 flex-wrap gap-y-2">
           {isPdf && (
             <>
               <button
@@ -53,15 +123,23 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
               </button>
 
               <button
-                onClick={() => {
-                  setShowPreview(true);
-                  setFullscreen(!fullscreen);
-                }}
-                className="inline-flex items-center space-x-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                onClick={fullscreen ? exitFullscreen : enterFullscreen}
+                className="inline-flex items-center space-x-1 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/80 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-semibold transition-colors cursor-pointer border border-blue-200 dark:border-blue-800/80"
               >
-                <Maximize2 className="w-3.5 h-3.5" />
+                {fullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
                 <span>{fullscreen ? 'Thu nhỏ' : 'Toàn màn hình'}</span>
               </button>
+
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center space-x-1 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold transition-colors"
+                title="Mở tài liệu trong tab mới"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Mở tab mới</span>
+              </a>
             </>
           )}
 
@@ -79,24 +157,58 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
       {/* Main Preview Container */}
       {isPdf ? (
         showPreview ? (
-          <div className={`relative transition-all duration-300 ${fullscreen ? 'fixed inset-4 z-50 bg-slate-900 p-4 rounded-3xl flex flex-col' : 'w-full'}`}>
+          <div
+            ref={containerRef}
+            className={
+              fullscreen
+                ? 'fixed inset-0 z-[9999] bg-slate-950 p-3 sm:p-5 flex flex-col w-screen h-screen'
+                : 'relative w-full'
+            }
+          >
+            {/* Fullscreen Header Bar */}
             {fullscreen && (
-              <div className="flex justify-between items-center pb-3 text-white">
-                <span className="font-bold text-sm">{title}</span>
-                <button
-                  onClick={() => setFullscreen(false)}
-                  className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-xs font-semibold"
-                >
-                  Đóng toàn màn hình
-                </button>
+              <div className="flex items-center justify-between gap-3 pb-3 mb-2 border-b border-slate-800 text-white">
+                <div className="flex items-center space-x-2 truncate">
+                  <FileText className="w-4 h-4 text-blue-400 shrink-0" />
+                  <span className="font-bold text-sm truncate">{title}</span>
+                </div>
+                <div className="flex items-center space-x-2 shrink-0">
+                  <a
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center space-x-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Mở tab mới</span>
+                  </a>
+                  <a
+                    href={downloadUrl}
+                    download
+                    className="inline-flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Tải xuống</span>
+                  </a>
+                  <button
+                    onClick={exitFullscreen}
+                    className="inline-flex items-center space-x-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold transition-colors"
+                    title="Thoát toàn màn hình (Esc)"
+                  >
+                    <X className="w-4 h-4" />
+                    <span className="hidden sm:inline">Thoát (Esc)</span>
+                  </button>
+                </div>
               </div>
             )}
+
             <iframe
               src={`${fileUrl}#toolbar=1`}
               title={title}
               loading="lazy"
+              allow="fullscreen"
               className={`w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 ${
-                fullscreen ? 'flex-1 h-full' : 'h-[500px] sm:h-[650px]'
+                fullscreen ? 'flex-1 h-full min-h-0' : 'h-[500px] sm:h-[650px]'
               }`}
             />
           </div>
@@ -120,6 +232,13 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
               >
                 <Eye className="w-4 h-4" />
                 <span>Xem trực tiếp PDF</span>
+              </button>
+              <button
+                onClick={enterFullscreen}
+                className="inline-flex items-center space-x-2 px-4 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                <Maximize2 className="w-4 h-4" />
+                <span>Xem toàn màn hình</span>
               </button>
               <a
                 href={downloadUrl}
@@ -155,8 +274,8 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
           </a>
         </div>
       )}
-
     </div>
   );
 }
+
 
