@@ -65,13 +65,7 @@ export async function addCommentAction({
   }
 }
 
-export async function deleteCommentAction({
-  commentId,
-  postId,
-}: {
-  commentId: string;
-  postId: string;
-}) {
+export async function deleteComment(commentId: string, postId: string) {
   try {
     const supabase = await createClient();
     const {
@@ -93,7 +87,7 @@ export async function deleteCommentAction({
       .eq('id', user.id)
       .single();
 
-    const isAdminOrMod = profile?.role === 'admin' || profile?.role === 'moderator';
+    const isAdminOrMod = ['admin', 'moderator'].includes(profile?.role || '');
 
     // Fetch comment to check ownership
     const { data: comment } = await supabase
@@ -106,7 +100,9 @@ export async function deleteCommentAction({
       return { success: false, error: 'Bình luận không tồn tại.' };
     }
 
-    if (comment.author_id !== user.id && !isAdminOrMod) {
+    const isAuthor = comment.author_id === user.id;
+
+    if (!isAuthor && !isAdminOrMod) {
       return {
         success: false,
         error: 'Bạn không có quyền xóa bình luận này.',
@@ -123,6 +119,7 @@ export async function deleteCommentAction({
 
     revalidatePath(`/post/${postId}`);
     revalidatePath(`/posts/${postId}`);
+    revalidatePath('/');
     return { success: true };
   } catch (err: any) {
     console.error('Lỗi khi xóa bình luận:', err);
@@ -132,3 +129,14 @@ export async function deleteCommentAction({
     };
   }
 }
+
+export async function deleteCommentAction({
+  commentId,
+  postId,
+}: {
+  commentId: string;
+  postId: string;
+}) {
+  return deleteComment(commentId, postId);
+}
+

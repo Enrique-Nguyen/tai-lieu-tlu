@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { addCommentAction, deleteCommentAction } from '@/app/actions/comment';
+import { CommentItem } from '@/components/comment-item';
 import { formatRelativeDate } from '@/lib/utils';
 import { MessageSquare, Send, Reply, Trash2, Shield, User, CornerDownRight } from 'lucide-react';
 
@@ -91,97 +92,32 @@ export function CommentSection({
     });
   };
 
+  const currentUserObj = currentUserId ? { id: currentUserId, role: currentUserRole } : null;
+
   const renderCommentCard = (comment: CommentItem, isReply = false) => {
-    const isOwner = currentUserId === comment.author?.id;
-    const canDelete = isOwner || isAdminOrMod;
+    const isReplying = replyingToId === comment.id;
 
     return (
-      <div
-        key={comment.id}
-        className={`p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3 transition-colors ${
-          isReply ? 'ml-4 sm:ml-8 border-l-2 border-l-blue-500' : ''
-        }`}
-      >
-        {/* Comment Header */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
-              {comment.author?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={comment.author.avatar_url}
-                  alt={comment.author.full_name || 'User'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                (comment.author?.full_name || 'U')[0].toUpperCase()
-              )}
-            </div>
-
-            <div>
-              <div className="flex items-center space-x-2 flex-wrap">
-                <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
-                  {comment.author?.full_name || 'Sinh viên TLU'}
-                </span>
-
-                {comment.author?.role === 'admin' && (
-                  <span className="px-1.5 py-0.5 bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold text-[10px] rounded-md inline-flex items-center">
-                    <Shield className="w-2.5 h-2.5 mr-0.5" /> Admin
-                  </span>
-                )}
-
-                {(comment.author?.academic_year || comment.author?.major) && (
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    ({comment.author.academic_year || ''} {comment.author.major ? `• ${comment.author.major}` : ''})
-                  </span>
-                )}
-              </div>
-
-              <span className="text-[11px] text-slate-400">
-                {formatRelativeDate(comment.created_at)}
-              </span>
-            </div>
-          </div>
-
-          {/* Action Delete */}
-          {canDelete && (
-            <button
-              onClick={() => handleDeleteComment(comment.id)}
-              disabled={isPending}
-              className="p-1 text-slate-400 hover:text-red-600 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              title="Xóa bình luận"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Comment Content */}
-        <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed whitespace-pre-line pl-11 sm:pl-11">
-          {comment.content}
-        </p>
-
-        {/* Reply Toggle */}
-        <div className="pl-11 flex items-center space-x-3 text-xs">
-          <button
-            onClick={() => {
-              if (replyingToId === comment.id) {
-                setReplyingToId(null);
-              } else {
-                setReplyingToId(comment.id);
-                setReplyContent('');
-              }
-            }}
-            className="inline-flex items-center space-x-1 font-semibold text-slate-500 hover:text-blue-600 transition-colors cursor-pointer"
-          >
-            <Reply className="w-3.5 h-3.5" />
-            <span>{replyingToId === comment.id ? 'Hủy trả lời' : 'Trả lời'}</span>
-          </button>
-        </div>
+      <div key={comment.id} className="space-y-2">
+        <CommentItem
+          comment={comment}
+          currentUser={currentUserObj}
+          postId={postId}
+          isReply={isReply}
+          onReplyClick={(id) => {
+            if (replyingToId === id) {
+              setReplyingToId(null);
+            } else {
+              setReplyingToId(id);
+              setReplyContent('');
+            }
+          }}
+          isReplying={isReplying}
+        />
 
         {/* Inline Reply Box */}
-        {replyingToId === comment.id && (
-          <div className="mt-3 pl-11 space-y-2 animate-in fade-in duration-150">
+        {isReplying && (
+          <div className="mt-3 pl-8 sm:pl-12 space-y-2 animate-in fade-in duration-150">
             <div className="flex gap-2">
               <input
                 type="text"
