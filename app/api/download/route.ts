@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/server";
+import { checkUserBlockStatus } from "@/lib/server-guard";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -9,8 +11,25 @@ export async function GET(request: NextRequest) {
     return new NextResponse("Missing file URL parameter", { status: 400 });
   }
 
+  // 0. Check if authenticated user is suspended or banned before serving the file
   try {
-    // 1. Fetch original file from Supabase Storage or remote URL with 10s timeout
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const blockStatus = await checkUserBlockStatus(user.id);
+      if (blockStatus.isBlocked) {
+        return NextResponse.json({ error: blockStatus.error }, { status: 403 });
+      }
+    }
+  } catch {
+    // If auth check fails for any reason, allow download (don't block guests)
+  }
+
+  try {
+    // 1. Fetch original file from Supabase Storage or remote URL with 8s timeout
     const response = await fetch(fileUrl, {
       signal: AbortSignal.timeout(8000),
     });

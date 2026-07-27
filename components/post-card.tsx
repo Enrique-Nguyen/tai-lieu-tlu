@@ -69,6 +69,29 @@ export function PostCard({ post, currentUserId, isBookmarked = false }: PostCard
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
 
+  const handleDownload = async (fileUrl: string, title: string) => {
+    const url = `/api/download?url=${encodeURIComponent(fileUrl)}&title=${encodeURIComponent(title)}`;
+    const res = await fetch(url);
+    if (res.status === 403) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || 'Tài khoản của bạn hiện bị hạn chế. Không thể tải xuống tài liệu.');
+      return;
+    }
+    // Trigger download via temporary anchor
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?([^;\n"]+)/i);
+    const filename = filenameMatch ? decodeURIComponent(filenameMatch[1].trim()) : title;
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objectUrl);
+  };
+
   const votesList = post.votes || [];
   const initialUpvotes = votesList.filter(
     (v) => (v.vote_type as any) === 1 || v.vote_type === 'up' || (v.vote_type as any) === '1'
@@ -257,15 +280,14 @@ export function PostCard({ post, currentUserId, isBookmarked = false }: PostCard
 
         {/* Right: Actions */}
         {post.file_url && (
-          <a
-            href={`/api/download?url=${encodeURIComponent(post.file_url)}&title=${encodeURIComponent(post.title)}`}
-            download
-            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg text-xs font-medium transition-all"
+          <button
+            onClick={() => handleDownload(post.file_url!, post.title)}
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-lg text-xs font-medium transition-all cursor-pointer"
             title={`Tải file: ${post.title}`}
           >
             <Download className="w-3.5 h-3.5" />
             <span>Tải file</span>
-          </a>
+          </button>
         )}
 
       </div>

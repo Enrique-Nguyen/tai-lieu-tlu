@@ -82,6 +82,29 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
     }
   };
 
+  const handleDownload = async () => {
+    const url = `/api/download?url=${encodeURIComponent(fileUrl)}&title=${encodeURIComponent(title)}`;
+    const res = await fetch(url);
+    if (res.status === 403) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || 'Tài khoản của bạn hiện bị hạn chế. Không thể tải xuống tài liệu.');
+      return;
+    }
+    // Trigger download via temporary anchor
+    const blob = await res.blob();
+    const disposition = res.headers.get('Content-Disposition') || '';
+    const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?([^;\n"]+)/i);
+    const filename = filenameMatch ? decodeURIComponent(filenameMatch[1].trim()) : title;
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(objectUrl);
+  };
+
   const exitFullscreen = async () => {
     if (document.fullscreenElement && document.exitFullscreen) {
       try {
@@ -143,14 +166,13 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
             </>
           )}
 
-          <a
-            href={downloadUrl}
-            download
+          <button
+            onClick={handleDownload}
             className="inline-flex items-center space-x-1.5 px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Tải xuống</span>
-          </a>
+          </button>
         </div>
       </div>
 
@@ -182,14 +204,13 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
                     <ExternalLink className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Mở tab mới</span>
                   </a>
-                  <a
-                    href={downloadUrl}
-                    download
-                    className="inline-flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition-colors"
+                  <button
+                    onClick={handleDownload}
+                    className="inline-flex items-center space-x-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-medium transition-colors cursor-pointer"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Tải xuống</span>
-                  </a>
+                  </button>
                   <button
                     onClick={exitFullscreen}
                     className="inline-flex items-center space-x-1 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold transition-colors"
@@ -240,14 +261,13 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
                 <Maximize2 className="w-4 h-4" />
                 <span>Xem toàn màn hình</span>
               </button>
-              <a
-                href={downloadUrl}
-                download
+              <button
+                onClick={handleDownload}
                 className="inline-flex items-center space-x-2 px-4 py-2.5 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
               >
                 <Download className="w-4 h-4" />
                 <span>Tải tệp tin về máy</span>
-              </a>
+              </button>
             </div>
           </div>
         )
@@ -264,14 +284,13 @@ export function FileViewer({ fileUrl, title }: FileViewerProps) {
               Định dạng tệp tin này không hỗ trợ xem trực tiếp trên trình duyệt. Nhấn nút bên dưới để tải về máy tính hoặc điện thoại.
             </p>
           </div>
-          <a
-            href={downloadUrl}
-            download
-            className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md"
+          <button
+            onClick={handleDownload}
+            className="inline-flex items-center space-x-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>Tải tệp tin về máy</span>
-          </a>
+          </button>
         </div>
       )}
     </div>
