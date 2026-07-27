@@ -24,10 +24,12 @@ export function LayoutShell({ profile, children }: LayoutShellProps) {
       </Suspense>
 
       {/* Global Header */}
-      <Header
-        profile={profile}
-        onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
-      />
+      <Suspense fallback={null}>
+        <Header
+          profile={profile}
+          onToggleMobileSidebar={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+        />
+      </Suspense>
 
       {/* Main Container with Sidebar + Content */}
       <div className="flex-1 max-w-7xl w-full mx-auto flex">
