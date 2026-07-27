@@ -139,11 +139,14 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   const totalPages = Math.ceil((count || 0) / PAGE_SIZE);
 
+  const showHero = !category && !faculty && !department && !subject && !q;
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
 
       {/* Hero Banner */}
-      <div className="relative rounded-2xl bg-blue-600 p-6 sm:p-8 text-white overflow-hidden">
+      {showHero && (
+        <div className="relative rounded-2xl bg-blue-600 p-6 sm:p-8 text-white overflow-hidden">
 
         {/* Subtle ambient */}
         <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/30 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/4" />
@@ -216,6 +219,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
         </div>
       </div>
+      )}
 
       {/* Filter and Search Section */}
       <PostFilter subjects={subjects} />
