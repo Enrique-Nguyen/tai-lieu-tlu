@@ -142,16 +142,22 @@ export async function GET(request: NextRequest) {
       .replace(/['()]/g, escape)
       .replace(/\*/g, "%2A");
 
+    // ASCII fallback for legacy `filename="..."` (HTTP headers require ByteString 0-255)
+    const asciiFilename = safeTitle
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .replace(/[^\x20-\x7E]/g, "_")
+      .replace(/"/g, '\\"');
+
     const arrayBuffer = await response.arrayBuffer();
 
     const headers = new Headers();
     headers.set("Content-Type", contentType);
     headers.set(
       "Content-Disposition",
-      `attachment; filename="${safeTitle.replace(
-        /"/g,
-        '\\"',
-      )}"; filename*=UTF-8''${encodedFilename}`,
+      `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodedFilename}`,
     );
     headers.set("Cache-Control", "public, max-age=3600, must-revalidate");
 
