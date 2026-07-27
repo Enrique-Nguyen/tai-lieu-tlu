@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { voteAction } from '@/app/actions/vote';
 import { formatRelativeDate } from '@/lib/utils';
+import { handleDownload } from '@/lib/download';
 import {
   ThumbsUp,
   ThumbsDown,
@@ -68,29 +69,6 @@ export function PostCard({ post, currentUserId, isBookmarked = false }: PostCard
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [copied, setCopied] = useState(false);
-
-  const handleDownload = async (fileUrl: string, title: string) => {
-    const url = `/api/download?url=${encodeURIComponent(fileUrl)}&title=${encodeURIComponent(title)}`;
-    const res = await fetch(url);
-    if (res.status === 403) {
-      const data = await res.json().catch(() => ({}));
-      alert(data.error || 'Tài khoản của bạn hiện bị hạn chế. Không thể tải xuống tài liệu.');
-      return;
-    }
-    // Trigger download via temporary anchor
-    const blob = await res.blob();
-    const disposition = res.headers.get('Content-Disposition') || '';
-    const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?([^;\n"]+)/i);
-    const filename = filenameMatch ? decodeURIComponent(filenameMatch[1].trim()) : title;
-    const objectUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = objectUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(objectUrl);
-  };
 
   const votesList = post.votes || [];
   const initialUpvotes = votesList.filter(
